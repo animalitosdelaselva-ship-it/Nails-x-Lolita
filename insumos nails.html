@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insumos — Nails x Lolita</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+
+  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  .nav-title { font-size: 16px; font-weight: 500; }
+  .nav-sub { font-size: 12px; color: #888; margin-top: 1px; }
+
+  .tabs { display: flex; gap: 6px; padding: 14px 20px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+
+  .panel { display: none; padding: 16px 20px 60px; max-width: 720px; margin: 0 auto; }
+  .panel.active { display: block; }
+
+  .section-sep { font-size: 11px; font-weight: 500; letter-spacing: .5px; color: #999; text-transform: uppercase; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid #ddd; }
+
+  .btn { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #444; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .btn:hover { background: #f0f0ee; }
+  .btn.primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .btn.primary:hover { background: #333; }
+  .btn.sm { font-size: 12px; padding: 4px 10px; }
+  .btn.danger { color: #c0392b; border-color: #e0b0ae; }
+  .btn.danger:hover { background: #fdf0ef; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .field-label { font-size: 12px; color: #666; font-weight: 500; }
+  input, select, textarea { font-family: inherit; font-size: 13px; color: #1a1a18; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 8px 10px; width: 100%; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #888; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  .hint { font-size: 11px; color: #aaa; margin-top: 3px; }
+
+  .cat-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .cat-chip { padding: 5px 12px; border-radius: 20px; border: 0.5px solid #ddd; background: #f5f5f3; font-size: 12px; color: #555; cursor: pointer; }
+  .cat-chip.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+
+  .insumo-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; }
+  .insumo-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .insumo-name { font-size: 14px; font-weight: 500; }
+  .insumo-brand { font-size: 12px; color: #888; margin-top: 2px; }
+  .insumo-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: #f0f0ee; color: #555; }
+  .pill.cat { background: #e8f0fe; color: #2a5cc5; }
+  .pill.cost { background: #e6f4ee; color: #1a7a4a; font-weight: 500; }
+  .pill.method { background: #fef9e7; color: #7a5a00; }
+  .insumo-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .empty { text-align: center; color: #aaa; font-size: 14px; padding: 40px 20px; }
+
+  /* FORM PANEL */
+  .form-panel { display: none; position: fixed; inset: 0; background: #f5f5f3; overflow-y: auto; z-index: 20; }
+  .form-panel.open { display: block; }
+  .form-nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; }
+  .form-nav h2 { font-size: 15px; font-weight: 500; flex: 1; }
+  .form-body { padding: 20px; max-width: 640px; margin: 0 auto; }
+
+  .method-box { background: #f5f5f3; border: 0.5px solid #ddd; border-radius: 8px; padding: 12px 14px; margin-top: 8px; }
+  .method-box .field-label { color: #555; margin-bottom: 8px; display: block; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  .costo-preview { background: #e6f4ee; border: 0.5px solid #80cfa0; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #1a5a38; margin-top: 10px; display: none; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div>
+    <div class="nav-title">Base de insumos</div>
+    <div class="nav-sub">Nails x Lolita</div>
+  </div>
+  <button class="btn primary" onclick="openForm(null)">+ Nuevo insumo</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('lista')">Todos los insumos</button>
+  <button class="tab" onclick="switchTab('resumen')">Costo por servicio</button>
+</div>
+
+<!-- LISTA -->
+<div id="panel-lista" class="panel active">
+  <div class="cat-filter" id="cat-filter"></div>
+  <div id="insumos-list"></div>
+</div>
+
+<!-- RESUMEN POR SERVICIO -->
+<div id="panel-resumen" class="panel">
+  <p style="font-size:13px;color:#888;margin-bottom:16px">Costo estimado de materiales por servicio, basado en los insumos cargados. Los geles marcados como "por peso" se calculan cuando registrás el uso real.</p>
+  <div id="resumen-servicios"></div>
+</div>
+
+<!-- FORM PANEL -->
+<div class="form-panel" id="form-panel">
+  <div class="form-nav">
+    <button class="btn" onclick="closeForm()">← Volver</button>
+    <h2 id="form-title">Nuevo insumo</h2>
+  </div>
+  <div class="form-body">
+    <input type="hidden" id="f-id">
+
+    <div class="section-sep">Identificación</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="field-label">Nombre del insumo *</label>
+        <input type="text" id="f-nombre" placeholder="Ej: Esmalte semipermanente rosa, Lima 100/180...">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Categoría *</label>
+        <select id="f-categoria" onchange="updateMethodForm()">
+          <option value="">Seleccionar...</option>
+          <option value="Desechables">Desechables</option>
+          <option value="Cortesías">Cortesías</option>
+          <option value="Básicos en gel">Básicos en gel</option>
+          <option value="Nail art geles">Nail art geles</option>
+          <option value="Equipos electrónicos">Equipos electrónicos</option>
+          <option value="Útiles de aseo">Útiles de aseo</option>
+          <option value="Esenciales">Esenciales</option>
+          <option value="Nail art herramientas">Nail art herramientas</option>
+          <option value="Herramientas">Herramientas</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Marca</label>
+        <input type="text" id="f-marca" placeholder="Ej: Gelish, OPI, Sin marca...">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Tienda / Proveedor</label>
+        <input type="text" id="f-tienda" placeholder="Ej: Amazon, tienda local, online...">
+      </div>
+      <div class="form-group">
+        <label class="field-label">URL o referencia de compra</label>
+        <input type="text" id="f-url" placeholder="Enlace o código del producto">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Stock actual</label>
+        <input type="number" id="f-stock" placeholder="0" min="0">
+        <span class="hint">Unidades disponibles ahora</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Stock mínimo (alerta)</label>
+        <input type="number" id="f-stock-min" placeholder="0" min="0">
+        <span class="hint">Cuando llegue a este nivel, hay que reponer</span>
+      </div>
+      <div class="form-group full">
+        <label class="field-label">Notas</label>
+        <textarea id="f-notas" placeholder="Color, talla, detalles relevantes para la compra..."></textarea>
+      </div>
+    </div>
+
+    <div class="section-sep">Precio y costo por clienta</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Precio de compra (Ft) *</label>
+        <input type="number" id="f-precio" placeholder="0" oninput="calcCosto()">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Cantidad por envase / unidad</label>
+        <input type="number" id="f-cantidad" placeholder="Ej: 15 (g o ml o uds)" oninput="calcCosto()">
+        <span class="hint">Gramos, ml, o cantidad de piezas</span>
+      </div>
+    </div>
+
+    <!-- Método dinámico -->
+    <div id="method-form"></div>
+    <div class="costo-preview" id="costo-preview"></div>
+
+    <div class="form-grid" style="margin-top:14px">
+      <div class="form-group">
+        <label class="field-label">Costo calculado por clienta (Ft)</label>
+        <input type="number" id="f-costo-clienta" placeholder="Se calcula automático o ingresalo manualmente">
+        <span class="hint">Podés ajustarlo manualmente si el cálculo no aplica</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">¿Se usa por peso/medida en cada servicio?</label>
+        <select id="f-por-peso">
+          <option value="no">No — costo fijo por clienta</option>
+          <option value="si">Sí — se pesa cada uso (geles)</option>
+        </select>
+        <span class="hint">Solo para geles que pesás antes y después</span>
+      </div>
+      <div class="form-group" id="unidad-grupo" style="display:none">
+        <label class="field-label">Unidad de medida</label>
+        <select id="f-unidad">
+          <option value="g">Gramos (g)</option>
+          <option value="ml">Mililitros (ml)</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+      <button class="btn primary" onclick="saveInsumo()">Guardar insumo</button>
+      <button class="btn danger" id="btn-delete" onclick="deleteInsumo()" style="display:none">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CATS = ['Desechables','Cortesías','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
+const SERVICIOS = ['Manicura','Manicura esmalte tradicional','Manicura semipermanente','Manicura estructurada semi','Pedicura','Pedicura esmalte tradicional','Pedicura semipermanente','Gel X largo S','Gel X largo M','Gel X largo L','Gel X largo XL'];
+
+let activeCat = 'Todos';
+
+function getStore(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }
+function setStore(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+function fmt(n) { return Math.round(n).toLocaleString('hu-HU') + ' Ft'; }
+
+// --- Category filter ---
+function renderCatFilter() {
+  const all = ['Todos', ...CATS];
+  document.getElementById('cat-filter').innerHTML = all.map(c =>
+    `<div class="cat-chip ${activeCat===c?'active':''}" onclick="setCat('${c}')">${c}</div>`
+  ).join('');
+}
+function setCat(c) { activeCat = c; renderCatFilter(); renderList(); }
+
+// --- List ---
+function renderList() {
+  const data = getStore('nxl_insumos');
+  const filtered = activeCat === 'Todos' ? data : data.filter(i => i.categoria === activeCat);
+  const el = document.getElementById('insumos-list');
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty">${activeCat==='Todos'?'Todavía no hay insumos. Agregá el primero con el botón de arriba.':'Sin insumos en esta categoría.'}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(i => {
+    const stockAlert = i.stockMin && i.stock !== '' && parseInt(i.stock) <= parseInt(i.stockMin);
+    return `<div class="insumo-card">
+      <div class="insumo-header">
+        <div>
+          <div class="insumo-name">${i.nombre}${stockAlert ? ' <span style="color:#c0392b;font-size:12px">⚠ stock bajo</span>' : ''}</div>
+          <div class="insumo-brand">${[i.marca, i.tienda].filter(Boolean).join(' · ') || 'Sin marca/tienda'}</div>
+        </div>
+        <div class="insumo-actions">
+          <button class="btn sm" onclick="openForm('${i.id}')">Editar</button>
+        </div>
+      </div>
+      <div class="insumo-meta">
+        <span class="pill cat">${i.categoria}</span>
+        ${i.costoPorClienta ? `<span class="pill cost">${fmt(i.costoPorClienta)}/clienta</span>` : ''}
+        ${i.porPeso === 'si' ? `<span class="pill method">Se pesa (${i.unidad||'g'})</span>` : ''}
+        ${i.precio ? `<span class="pill">Precio: ${fmt(i.precio)}</span>` : ''}
+        ${i.stock !== '' && i.stock !== undefined ? `<span class="pill">Stock: ${i.stock}</span>` : ''}
+        ${i.notas ? `<span class="pill" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i.notas}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// --- Resumen por servicio ---
+function renderResumen() {
+  const insumos = getStore('nxl_insumos').filter(i => i.costoPorClienta && i.costoPorClienta > 0);
+  const el = document.getElementById('resumen-servicios');
+  if (!insumos.length) {
+    el.innerHTML = `<div class="empty">Cargá insumos con costo por clienta para ver el resumen.</div>`;
+    return;
+  }
+  // Group by categoria
+  const byCat = {};
+  insumos.forEach(i => {
+    if (!byCat[i.categoria]) byCat[i.categoria] = [];
+    byCat[i.categoria].push(i);
+  });
+  const totalFijo = insumos.filter(i => i.porPeso !== 'si').reduce((s,i) => s + parseFloat(i.costoPorClienta||0), 0);
+  const totalVariable = insumos.filter(i => i.porPeso === 'si').reduce((s,i) => s + parseFloat(i.costoPorClienta||0), 0);
+
+  let html = `<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+    <div style="font-size:13px;font-weight:500;margin-bottom:10px">Resumen total de costos</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+      <div style="background:#f5f5f3;border-radius:8px;padding:10px 14px">
+        <div style="font-size:11px;color:#999;margin-bottom:4px">Costo fijo por clienta</div>
+        <div style="font-size:18px;font-weight:500;color:#1a7a4a">${fmt(totalFijo)}</div>
+        <div style="font-size:11px;color:#aaa">desechables + herramientas</div>
+      </div>
+      <div style="background:#f5f5f3;border-radius:8px;padding:10px 14px">
+        <div style="font-size:11px;color:#999;margin-bottom:4px">Geles (base estimada)</div>
+        <div style="font-size:18px;font-weight:500;color:#2a5cc5">${fmt(totalVariable)}</div>
+        <div style="font-size:11px;color:#aaa">varía según uso real</div>
+      </div>
+      <div style="background:#f5f5f3;border-radius:8px;padding:10px 14px">
+        <div style="font-size:11px;color:#999;margin-bottom:4px">Costo estimado total</div>
+        <div style="font-size:18px;font-weight:500">${fmt(totalFijo + totalVariable)}</div>
+        <div style="font-size:11px;color:#aaa">por atención promedio</div>
+      </div>
+    </div>
+  </div>`;
+
+  Object.entries(byCat).forEach(([cat, items]) => {
+    const total = items.reduce((s,i)=>s+parseFloat(i.costoPorClienta||0),0);
+    html += `<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:500">${cat}</div>
+        <div style="font-size:13px;color:#1a7a4a;font-weight:500">${fmt(total)}</div>
+      </div>
+      ${items.map(i=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:0.5px solid #f0f0ee">
+        <span style="color:#555">${i.nombre}${i.porPeso==='si'?' <span style="font-size:11px;color:#aaa">(por peso)</span>':''}</span>
+        <span>${fmt(i.costoPorClienta)}</span>
+      </div>`).join('')}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// --- Method form ---
+function updateMethodForm() {
+  const cat = document.getElementById('f-categoria').value;
+  const porPeso = document.getElementById('f-por-peso');
+  const unidadGrupo = document.getElementById('unidad-grupo');
+  let html = '';
+
+  if (['Desechables','Cortesías'].includes(cat)) {
+    html = `<div class="method-box"><span class="field-label">Método: costo por unidad</span><p style="font-size:12px;color:#888">Se consume 1 unidad por clienta. El costo es: precio ÷ cantidad en envase.</p></div>`;
+    porPeso.value = 'no';
+    unidadGrupo.style.display = 'none';
+  } else if (['Básicos en gel','Nail art geles'].includes(cat)) {
+    html = `<div class="method-box"><span class="field-label">Método: por peso/medida real</span><p style="font-size:12px;color:#888">Pesás antes y después de cada clienta. Ingresá el precio por g o ml para que se calcule automáticamente al registrar una atención. Podés poner un costo estimado base.</p></div>`;
+    porPeso.value = 'si';
+    unidadGrupo.style.display = 'flex';
+  } else if (cat === 'Equipos electrónicos') {
+    html = `<div class="method-box">
+      <span class="field-label">Método: amortización por vida útil</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+        <div class="form-group">
+          <label class="field-label">Vida útil (años)</label>
+          <input type="number" id="m-años" placeholder="Ej: 3" oninput="calcCosto()">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Clientas por año (estimado)</label>
+          <input type="number" id="m-clientas-año" placeholder="Ej: 400" oninput="calcCosto()">
+        </div>
+      </div>
+    </div>`;
+    porPeso.value = 'no';
+    unidadGrupo.style.display = 'none';
+  } else if (['Útiles de aseo','Esenciales'].includes(cat)) {
+    html = `<div class="method-box">
+      <span class="field-label">Método: precio ÷ días de uso ÷ clientas por día</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+        <div class="form-group">
+          <label class="field-label">Días de uso del producto</label>
+          <input type="number" id="m-dias" placeholder="Ej: 30" oninput="calcCosto()">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Clientas por día (promedio)</label>
+          <input type="number" id="m-clientas-dia" placeholder="Ej: 4" oninput="calcCosto()">
+        </div>
+      </div>
+    </div>`;
+    porPeso.value = 'no';
+    unidadGrupo.style.display = 'none';
+  } else if (['Nail art herramientas','Herramientas'].includes(cat)) {
+    html = `<div class="method-box">
+      <span class="field-label">Método: precio ÷ vida útil en usos</span>
+      <div style="margin-top:8px">
+        <div class="form-group">
+          <label class="field-label">Vida útil (cantidad de clientas que aguanta)</label>
+          <input type="number" id="m-usos" placeholder="Ej: 200" oninput="calcCosto()">
+        </div>
+      </div>
+    </div>`;
+    porPeso.value = 'no';
+    unidadGrupo.style.display = 'none';
+  }
+
+  document.getElementById('method-form').innerHTML = html;
+  calcCosto();
+}
+
+function calcCosto() {
+  const cat = document.getElementById('f-categoria').value;
+  const precio = parseFloat(document.getElementById('f-precio').value) || 0;
+  const cantidad = parseFloat(document.getElementById('f-cantidad').value) || 0;
+  let costo = null;
+  let detalle = '';
+
+  if (['Desechables','Cortesías'].includes(cat) && precio && cantidad) {
+    costo = precio / cantidad;
+    detalle = `${fmt(precio)} ÷ ${cantidad} uds = ${fmt(costo)} por clienta`;
+  } else if (cat === 'Equipos electrónicos') {
+    const años = parseFloat(document.getElementById('m-años')?.value) || 0;
+    const clientasAño = parseFloat(document.getElementById('m-clientas-año')?.value) || 0;
+    if (precio && años && clientasAño) {
+      costo = precio / años / clientasAño;
+      detalle = `${fmt(precio)} ÷ ${años} años ÷ ${clientasAño} clientas/año = ${fmt(costo)} por clienta`;
+    }
+  } else if (['Útiles de aseo','Esenciales'].includes(cat)) {
+    const dias = parseFloat(document.getElementById('m-dias')?.value) || 0;
+    const clientasDia = parseFloat(document.getElementById('m-clientas-dia')?.value) || 0;
+    if (precio && dias && clientasDia) {
+      costo = precio / dias / clientasDia;
+      detalle = `${fmt(precio)} ÷ ${dias} días ÷ ${clientasDia} clientas/día = ${fmt(costo)} por clienta`;
+    }
+  } else if (['Nail art herramientas','Herramientas'].includes(cat)) {
+    const usos = parseFloat(document.getElementById('m-usos')?.value) || 0;
+    if (precio && usos) {
+      costo = precio / usos;
+      detalle = `${fmt(precio)} ÷ ${usos} usos = ${fmt(costo)} por clienta`;
+    }
+  } else if (['Básicos en gel','Nail art geles'].includes(cat) && precio && cantidad) {
+    const precioPorUnidad = precio / cantidad;
+    costo = precioPorUnidad;
+    detalle = `${fmt(precio)} ÷ ${cantidad} (g/ml) = ${fmt(precioPorUnidad)}/g o ml. Se calculará por peso real en cada atención.`;
+  }
+
+  const preview = document.getElementById('costo-preview');
+  if (costo !== null && detalle) {
+    preview.style.display = 'block';
+    preview.textContent = '✓ ' + detalle;
+    document.getElementById('f-costo-clienta').value = Math.round(costo);
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// --- Form open/close ---
+function openForm(id) {
+  clearForm();
+  document.getElementById('form-panel').classList.add('open');
+  document.getElementById('btn-delete').style.display = 'none';
+  if (id) {
+    const i = getStore('nxl_insumos').find(x => x.id === id);
+    if (!i) return;
+    document.getElementById('form-title').textContent = i.nombre;
+    document.getElementById('f-id').value = i.id;
+    document.getElementById('f-nombre').value = i.nombre || '';
+    document.getElementById('f-categoria').value = i.categoria || '';
+    document.getElementById('f-marca').value = i.marca || '';
+    document.getElementById('f-tienda').value = i.tienda || '';
+    document.getElementById('f-url').value = i.url || '';
+    document.getElementById('f-stock').value = i.stock || '';
+    document.getElementById('f-stock-min').value = i.stockMin || '';
+    document.getElementById('f-notas').value = i.notas || '';
+    document.getElementById('f-precio').value = i.precio || '';
+    document.getElementById('f-cantidad').value = i.cantidad || '';
+    document.getElementById('f-costo-clienta').value = i.costoPorClienta || '';
+    document.getElementById('f-por-peso').value = i.porPeso || 'no';
+    updateMethodForm();
+    // restore method fields
+    setTimeout(() => {
+      if (i.metodo) {
+        Object.entries(i.metodo).forEach(([k,v]) => {
+          const el = document.getElementById(k);
+          if (el) el.value = v;
+        });
+      }
+      if (i.unidad) document.getElementById('f-unidad').value = i.unidad;
+      document.getElementById('f-costo-clienta').value = i.costoPorClienta || '';
+    }, 50);
+    document.getElementById('btn-delete').style.display = 'inline-flex';
+  } else {
+    document.getElementById('form-title').textContent = 'Nuevo insumo';
+    document.getElementById('method-form').innerHTML = '';
+  }
+  window.scrollTo(0,0);
+}
+
+function clearForm() {
+  ['f-id','f-nombre','f-marca','f-tienda','f-url','f-stock','f-stock-min','f-notas','f-precio','f-cantidad','f-costo-clienta']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  const cat = document.getElementById('f-categoria');
+  if (cat) cat.value = '';
+  const pp = document.getElementById('f-por-peso');
+  if (pp) pp.value = 'no';
+  document.getElementById('method-form').innerHTML = '';
+  document.getElementById('costo-preview').style.display = 'none';
+}
+
+function closeForm() {
+  document.getElementById('form-panel').classList.remove('open');
+  renderList();
+  renderResumen();
+}
+
+function saveInsumo() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const categoria = document.getElementById('f-categoria').value;
+  if (!nombre || !categoria) { alert('Nombre y categoría son obligatorios.'); return; }
+  const id = document.getElementById('f-id').value || Date.now().toString();
+
+  // Collect method fields
+  const metodo = {};
+  ['m-años','m-clientas-año','m-dias','m-clientas-dia','m-usos'].forEach(k => {
+    const el = document.getElementById(k);
+    if (el && el.value) metodo[k] = el.value;
+  });
+
+  const insumo = {
+    id, nombre, categoria,
+    marca: document.getElementById('f-marca').value.trim() || null,
+    tienda: document.getElementById('f-tienda').value.trim() || null,
+    url: document.getElementById('f-url').value.trim() || null,
+    stock: document.getElementById('f-stock').value || '',
+    stockMin: document.getElementById('f-stock-min').value || '',
+    notas: document.getElementById('f-notas').value.trim() || null,
+    precio: parseFloat(document.getElementById('f-precio').value) || null,
+    cantidad: parseFloat(document.getElementById('f-cantidad').value) || null,
+    costoPorClienta: parseFloat(document.getElementById('f-costo-clienta').value) || null,
+    porPeso: document.getElementById('f-por-peso').value,
+    unidad: document.getElementById('f-unidad')?.value || null,
+    metodo
+  };
+
+  const all = getStore('nxl_insumos').filter(x => x.id !== id);
+  all.push(insumo);
+  setStore('nxl_insumos', all);
+  showToast('Insumo guardado ✓');
+  closeForm();
+}
+
+function deleteInsumo() {
+  const id = document.getElementById('f-id').value;
+  if (!id || !confirm('¿Eliminar este insumo?')) return;
+  setStore('nxl_insumos', getStore('nxl_insumos').filter(x => x.id !== id));
+  showToast('Insumo eliminado');
+  closeForm();
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if (t === 'resumen') renderResumen();
+}
+
+document.getElementById('f-por-peso').addEventListener('change', function() {
+  document.getElementById('unidad-grupo').style.display = this.value === 'si' ? 'flex' : 'none';
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+renderCatFilter();
+renderList();
+</script>
+</body>
+</html>
