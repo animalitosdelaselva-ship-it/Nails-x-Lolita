@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Costos por servicio — Nails x Lolita</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  .nav-title { font-size: 16px; font-weight: 500; }
+  .nav-sub { font-size: 12px; color: #888; margin-top: 1px; }
+  .tabs { display: flex; gap: 6px; padding: 14px 20px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .panel { display: none; padding: 16px 20px 60px; max-width: 760px; margin: 0 auto; }
+  .panel.active { display: block; }
+  .section-sep { font-size: 11px; font-weight: 500; letter-spacing: .5px; color: #999; text-transform: uppercase; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid #ddd; }
+  .btn { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #444; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .btn:hover { background: #f0f0ee; }
+  .btn.primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .btn.primary:hover { background: #333; }
+  .btn.sm { font-size: 12px; padding: 4px 10px; }
+  .btn.danger { color: #c0392b; border-color: #e0b0ae; font-size: 12px; padding: 4px 10px; }
+  .btn.danger:hover { background: #fdf0ef; }
+  .btn.add { color: #2a5cc5; border-color: #aac4f5; font-size: 12px; padding: 5px 12px; }
+  .btn.add:hover { background: #e8f0fe; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .field-label { font-size: 12px; color: #666; font-weight: 500; }
+  input, select { font-family: inherit; font-size: 13px; color: #1a1a18; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 8px 10px; width: 100%; outline: none; }
+  input:focus, select:focus { border-color: #888; }
+  .hint { font-size: 11px; color: #aaa; margin-top: 3px; }
+
+  /* SERVICE CARDS */
+  .service-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .service-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+  .service-name { font-size: 14px; font-weight: 500; }
+  .service-price { font-size: 13px; color: #888; }
+  .service-costo { font-size: 13px; font-weight: 500; }
+  .service-body { border-top: 0.5px solid #f0f0ee; padding: 12px 16px; display: none; }
+  .service-body.open { display: block; }
+
+  /* INSUMO ROWS */
+  .insumo-asignado { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid #f5f5f3; font-size: 13px; }
+  .insumo-asignado:last-child { border-bottom: none; }
+  .insumo-nombre { flex: 1; color: #333; }
+  .insumo-cat { font-size: 11px; color: #aaa; margin-top: 1px; }
+  .insumo-cantidad { width: 90px; flex-shrink: 0; }
+  .insumo-cantidad input { padding: 5px 8px; font-size: 12px; text-align: right; }
+  .insumo-costo-unit { font-size: 12px; color: #888; width: 80px; text-align: right; flex-shrink: 0; }
+  .insumo-subtotal { font-size: 12px; color: #1a7a4a; font-weight: 500; width: 80px; text-align: right; flex-shrink: 0; }
+  .add-insumo-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .add-insumo-row select { flex: 1; font-size: 12px; padding: 6px 8px; }
+
+  /* GASTOS FIJOS */
+  .gasto-row { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; }
+  @media(max-width:500px){ .gasto-row { grid-template-columns: 1fr 1fr; } }
+
+  /* ANÁLISIS */
+  .analisis-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .analisis-header { padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 0.5px solid #f0f0ee; }
+  .analisis-body { padding: 12px 16px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+  .bar-label { width: 160px; flex-shrink: 0; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; background: #f0f0ee; border-radius: 4px; height: 7px; }
+  .bar-fill { height: 7px; border-radius: 4px; transition: width .3s; }
+  .bar-val { width: 70px; text-align: right; color: #555; flex-shrink: 0; font-size: 11px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .pill.green { background: #e6f4ee; color: #1a7a4a; font-weight: 500; }
+  .pill.red { background: #fdf0ef; color: #c0392b; font-weight: 500; }
+  .pill.warn { background: #fef9e7; color: #7a5a00; font-weight: 500; }
+  .pill.blue { background: #e8f0fe; color: #2a5cc5; }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 16px; }
+  .metric { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 12px 14px; }
+  .metric-label { font-size: 11px; color: #999; margin-bottom: 5px; }
+  .metric-value { font-size: 18px; font-weight: 500; }
+  .metric-value.green { color: #1a7a4a; }
+  .metric-value.red { color: #c0392b; }
+  .metric-value.blue { color: #2a5cc5; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+
+  .config-box { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .empty { text-align: center; color: #aaa; font-size: 14px; padding: 30px 20px; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div>
+    <div class="nav-title">Costos por servicio</div>
+    <div class="nav-sub">Nails x Lolita</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('servicios')">Insumos por servicio</button>
+  <button class="tab" onclick="switchTab('gastos')">Gastos fijos</button>
+  <button class="tab" onclick="switchTab('analisis')">Análisis de precios</button>
+</div>
+
+<!-- SERVICIOS -->
+<div id="panel-servicios" class="panel active">
+  <p style="font-size:13px;color:#888;margin-bottom:16px">Asigná los insumos a cada servicio e indicá cuánto usás por clienta. El costo se calcula automáticamente según los precios que cargaste en la base de insumos.</p>
+  <div id="servicios-list"></div>
+</div>
+
+<!-- GASTOS FIJOS -->
+<div id="panel-gastos" class="panel">
+  <div class="config-box">
+    <div style="font-size:13px;font-weight:500;margin-bottom:10px">Configuración base</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Clientas promedio por mes</label>
+        <input type="number" id="clientas-mes" placeholder="Ej: 60" oninput="saveConfig();renderGastos();renderAnalisis()">
+        <span class="hint">Para calcular el costo fijo por clienta</span>
+      </div>
+    </div>
+  </div>
+  <div class="section-sep">Gastos fijos mensuales</div>
+  <div id="gastos-list"></div>
+  <button class="btn add" style="margin-top:8px" onclick="addGastoFijo()">+ Agregar gasto fijo</button>
+</div>
+
+<!-- ANÁLISIS -->
+<div id="panel-analisis" class="panel">
+  <p style="font-size:13px;color:#888;margin-bottom:16px">Costo real por servicio = insumos + proporción de gastos fijos. Editá los precios para simular cambios y ver el nuevo margen.</p>
+  <div class="config-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:500">Precios de venta <span style="font-size:11px;color:#aaa;font-weight:400">(editables — no afecta el registro diario)</span></div>
+      <button class="btn sm" onclick="resetPrecios()">Restaurar originales</button>
+    </div>
+    <div id="precios-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px"></div>
+  </div>
+  <div id="analisis-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SERVICIOS_BASE = [
+  {id:'manicura', nombre:'Manicura', precio:6000},
+  {id:'manicura_trad', nombre:'Manicura esmalte tradicional', precio:8000},
+  {id:'manicura_semi', nombre:'Manicura semipermanente', precio:9000},
+  {id:'manicura_struct', nombre:'Manicura estructurada semi', precio:11000},
+  {id:'pedicura', nombre:'Pedicura', precio:9000},
+  {id:'pedicura_trad', nombre:'Pedicura esmalte tradicional', precio:10000},
+  {id:'pedicura_semi', nombre:'Pedicura semipermanente', precio:13000},
+  {id:'gelx_s', nombre:'Gel X largo S', precio:14500},
+  {id:'gelx_m', nombre:'Gel X largo M', precio:15500},
+  {id:'gelx_l', nombre:'Gel X largo L', precio:16500},
+  {id:'gelx_xl', nombre:'Gel X largo XL', precio:17500},
+];
+
+function getPreciosEditados(){return getObj('nxl_precios_simulados',{});}
+function setPreciosEditados(v){setObj('nxl_precios_simulados',v);}
+function getSERVICIOS(){
+  const editados=getPreciosEditados();
+  return SERVICIOS_BASE.map(s=>({...s, precio: editados[s.id]!==undefined ? editados[s.id] : s.precio, precioBase: s.precio}));
+}
+// Keep SERVICIOS as a getter for backward compat
+Object.defineProperty(window,'SERVICIOS',{get:getSERVICIOS});
+
+const CATS = ['Desechables','Cortesías','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
+const GASTOS_CATS = ['Alquiler del local','Productos (esmaltes, geles)','Transporte','Publicidad y redes','Impuestos','Contadora','Apps e internet','Otro'];
+
+function getStore(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
+function setStore(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function getObj(k,def={}){try{return JSON.parse(localStorage.getItem(k))||def;}catch(e){return def;}}
+function setObj(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function fmt(n){return Math.round(n).toLocaleString('hu-HU')+' Ft';}
+function fmtD(n){return n%1===0?n.toString():n.toFixed(2);}
+
+function getInsumos(){return getStore('nxl_insumos');}
+function getAsignaciones(){return getObj('nxl_asignaciones',{});}
+function getGastosFijos(){return getStore('nxl_gastos_fijos');}
+function getConfig(){return getObj('nxl_costos_config',{clientasMes:60});}
+
+function saveConfig(){
+  const cm=parseFloat(document.getElementById('clientas-mes').value)||60;
+  setObj('nxl_costos_config',{clientasMes:cm});
+}
+
+// Cost per unit of an insumo
+function costoPorUnidad(ins){
+  if(!ins||!ins.precio||!ins.cantidad) return ins?.costoPorClienta||0;
+  return ins.precio/ins.cantidad;
+}
+
+// Cost for a given insumo + quantity used
+function costoUso(ins, cantidad){
+  if(!ins) return 0;
+  if(ins.porPeso==='si'){
+    // precio por g/ml * cantidad usada
+    return costoPorUnidad(ins)*cantidad;
+  }
+  if(['Desechables','Cortesías'].includes(ins.categoria)){
+    return costoPorUnidad(ins)*cantidad;
+  }
+  // For others, costoPorClienta is already calculated
+  return (ins.costoPorClienta||0)*cantidad;
+}
+
+// ---- SERVICIOS PANEL ----
+function renderServiciosList(){
+  const asig=getAsignaciones();
+  const insumos=getInsumos();
+  const el=document.getElementById('servicios-list');
+  if(!insumos.length){
+    el.innerHTML=`<div class="empty">Primero cargá insumos en la base de insumos.<br><small style="color:#aaa">Una vez cargados, aparecerán aquí para asignarlos a cada servicio.</small></div>`;
+    return;
+  }
+  el.innerHTML=getSERVICIOS().map(sv=>{
+    const svAsig=asig[sv.id]||[];
+    const costoTotal=svAsig.reduce((s,a)=>{
+      const ins=insumos.find(i=>i.id===a.insumoId);
+      return s+costoUso(ins,a.cantidad);
+    },0);
+    const margen=sv.precio-costoTotal;
+    const pct=sv.precio>0?Math.round(margen/sv.precio*100):0;
+    const pillClass=pct>=50?'green':pct>=30?'warn':'red';
+    return `<div class="service-card">
+      <div class="service-header" onclick="toggleService('${sv.id}')">
+        <div>
+          <div class="service-name">${sv.nombre}</div>
+          <div class="service-price">Precio: ${fmt(sv.precio)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div>
+            <div class="service-costo" style="text-align:right">${costoTotal>0?fmt(costoTotal)+' costo':svAsig.length===0?'Sin insumos':fmt(costoTotal)}</div>
+            ${costoTotal>0?`<span class="pill ${pillClass}" style="float:right;margin-top:3px">${pct}% margen</span>`:''}
+          </div>
+          <span style="color:#ccc;font-size:16px" id="arr-${sv.id}">›</span>
+        </div>
+      </div>
+      <div class="service-body" id="body-${sv.id}">
+        ${renderInsumoRows(sv.id, svAsig, insumos)}
+        <div class="add-insumo-row">
+          <select id="add-sel-${sv.id}">
+            <option value="">+ Agregar insumo...</option>
+            ${insumos.filter(ins=>!svAsig.find(a=>a.insumoId===ins.id)).map(ins=>`<option value="${ins.id}">[${ins.categoria}] ${ins.nombre}</option>`).join('')}
+          </select>
+          <button class="btn add" onclick="agregarInsumoASV('${sv.id}')">Agregar</button>
+        </div>
+        ${costoTotal>0?`<div style="margin-top:12px;padding-top:10px;border-top:0.5px solid #f0f0ee;display:flex;justify-content:space-between;font-size:13px"><span style="color:#666">Costo total de insumos</span><span style="font-weight:500">${fmt(costoTotal)}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderInsumoRows(svId, svAsig, insumos){
+  if(!svAsig.length) return `<div style="color:#aaa;font-size:13px;padding:8px 0">Sin insumos asignados aún.</div>`;
+  return svAsig.map((a,idx)=>{
+    const ins=insumos.find(i=>i.id===a.insumoId);
+    if(!ins) return '';
+    const cpu=costoPorUnidad(ins);
+    const subtotal=costoUso(ins,a.cantidad);
+    const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'ud':'uso';
+    return `<div class="insumo-asignado">
+      <div style="flex:1;min-width:0">
+        <div class="insumo-nombre">${ins.nombre}</div>
+        <div class="insumo-cat">${ins.categoria}</div>
+      </div>
+      <div class="insumo-cantidad">
+        <input type="number" value="${a.cantidad}" min="0.01" step="0.01"
+          onchange="updateCantidad('${svId}',${idx},this.value)"
+          title="${unidad} por clienta">
+        <div style="font-size:10px;color:#aaa;text-align:right;margin-top:2px">${unidad}/clienta</div>
+      </div>
+      <div class="insumo-costo-unit">${fmt(cpu)}/${unidad}</div>
+      <div class="insumo-subtotal">${fmt(subtotal)}</div>
+      <button class="btn danger" onclick="quitarInsumo('${svId}',${idx})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleService(svId){
+  const body=document.getElementById(`body-${svId}`);
+  const arr=document.getElementById(`arr-${svId}`);
+  body.classList.toggle('open');
+  arr.textContent=body.classList.contains('open')?'⌄':'›';
+}
+
+function agregarInsumoASV(svId){
+  const sel=document.getElementById(`add-sel-${svId}`);
+  const insumoId=sel.value;
+  if(!insumoId) return;
+  const asig=getAsignaciones();
+  if(!asig[svId]) asig[svId]=[];
+  const ins=getInsumos().find(i=>i.id===insumoId);
+  const defaultQty=['Desechables','Cortesías'].includes(ins?.categoria)?1:1;
+  asig[svId].push({insumoId,cantidad:defaultQty});
+  setObj('nxl_asignaciones',asig);
+  renderServiciosList();
+  // reopen
+  setTimeout(()=>{
+    const body=document.getElementById(`body-${svId}`);
+    const arr=document.getElementById(`arr-${svId}`);
+    if(body){body.classList.add('open');arr.textContent='⌄';}
+  },50);
+  showToast('Insumo agregado ✓');
+}
+
+function updateCantidad(svId,idx,val){
+  const asig=getAsignaciones();
+  if(!asig[svId]) return;
+  asig[svId][idx].cantidad=parseFloat(val)||0;
+  setObj('nxl_asignaciones',asig);
+  renderServiciosList();
+  setTimeout(()=>{
+    const body=document.getElementById(`body-${svId}`);
+    const arr=document.getElementById(`arr-${svId}`);
+    if(body){body.classList.add('open');arr.textContent='⌄';}
+  },50);
+}
+
+function quitarInsumo(svId,idx){
+  const asig=getAsignaciones();
+  if(!asig[svId]) return;
+  asig[svId].splice(idx,1);
+  setObj('nxl_asignaciones',asig);
+  renderServiciosList();
+  setTimeout(()=>{
+    const body=document.getElementById(`body-${svId}`);
+    const arr=document.getElementById(`arr-${svId}`);
+    if(body){body.classList.add('open');arr.textContent='⌄';}
+  },50);
+}
+
+// ---- GASTOS FIJOS ----
+function renderGastos(){
+  const data=getGastosFijos();
+  const config=getConfig();
+  document.getElementById('clientas-mes').value=config.clientasMes||60;
+  const el=document.getElementById('gastos-list');
+  if(!data.length){el.innerHTML=`<div class="empty">No hay gastos fijos cargados aún.</div>`;return;}
+  const totalMensual=data.reduce((s,g)=>s+g.monto,0);
+  const costoPorClienta=config.clientasMes>0?totalMensual/config.clientasMes:0;
+  el.innerHTML=data.map((g,idx)=>`
+    <div class="gasto-row">
+      <div class="form-group">
+        <label class="field-label">Categoría</label>
+        <select onchange="updateGasto(${idx},'categoria',this.value)">
+          ${GASTOS_CATS.map(c=>`<option value="${c}" ${c===g.categoria?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Descripción</label>
+        <input type="text" value="${g.descripcion||''}" placeholder="Ej: Alquiler local Budapest" onchange="updateGasto(${idx},'descripcion',this.value)">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Monto mensual (Ft)</label>
+        <input type="number" value="${g.monto||''}" placeholder="0" oninput="updateGasto(${idx},'monto',parseFloat(this.value)||0)">
+      </div>
+      <div style="padding-bottom:4px">
+        <button class="btn danger" onclick="deleteGasto(${idx})">✕</button>
+      </div>
+    </div>`).join('')+
+    `<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-top:4px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;color:#666">Total mensual → costo por clienta (÷${config.clientasMes})</span>
+      <span style="font-size:14px;font-weight:500">${fmt(totalMensual)} → <span style="color:#c0392b">${fmt(costoPorClienta)}</span></span>
+    </div>`;
+}
+
+function addGastoFijo(){
+  const data=getGastosFijos();
+  data.push({categoria:'Alquiler del local',descripcion:'',monto:0});
+  setStore('nxl_gastos_fijos',data);
+  renderGastos();renderAnalisis();
+}
+function updateGasto(idx,field,val){
+  const data=getGastosFijos();
+  if(!data[idx]) return;
+  data[idx][field]=val;
+  setStore('nxl_gastos_fijos',data);
+  renderGastos();renderAnalisis();
+}
+function deleteGasto(idx){
+  const data=getGastosFijos();
+  data.splice(idx,1);
+  setStore('nxl_gastos_fijos',data);
+  renderGastos();renderAnalisis();
+  showToast('Gasto eliminado');
+}
+
+// ---- PRECIOS EDITOR ----
+function renderPreciosGrid(){
+  const servicios=getSERVICIOS();
+  document.getElementById('precios-grid').innerHTML=servicios.map(s=>`
+    <div class="form-group">
+      <label class="field-label" style="display:flex;justify-content:space-between">
+        <span>${s.nombre}</span>
+        ${s.precio!==s.precioBase?`<span style="color:#2a5cc5;font-size:10px">editado (orig: ${fmt(s.precioBase)})</span>`:''}
+      </label>
+      <input type="number" value="${s.precio}" min="0" step="100"
+        oninput="updatePrecio('${s.id}',this.value)"
+        style="background:${s.precio!==s.precioBase?'#f0f5ff':'#fff'}">
+    </div>`).join('');
+}
+
+function updatePrecio(id, val){
+  const editados=getPreciosEditados();
+  const base=SERVICIOS_BASE.find(s=>s.id===id);
+  const nuevo=parseFloat(val)||0;
+  if(nuevo===base?.precio) delete editados[id];
+  else editados[id]=nuevo;
+  setPreciosEditados(editados);
+  renderPreciosGrid();
+  renderAnalisis();
+}
+
+function resetPrecios(){
+  if(!confirm('¿Restaurar todos los precios originales?')) return;
+  setPreciosEditados({});
+  renderPreciosGrid();
+  renderAnalisis();
+  showToast('Precios restaurados ✓');
+}
+
+// ---- ANÁLISIS ----
+function calcCostoServicio(svId){
+  const asig=getAsignaciones();
+  const insumos=getInsumos();
+  const svAsig=asig[svId]||[];
+  return svAsig.reduce((s,a)=>{
+    const ins=insumos.find(i=>i.id===a.insumoId);
+    return s+costoUso(ins,a.cantidad);
+  },0);
+}
+
+function renderAnalisis(){
+  renderPreciosGrid();
+  const config=getConfig();
+  const gastosFijos=getGastosFijos();
+  const totalGastosMensual=gastosFijos.reduce((s,g)=>s+g.monto,0);
+  const gastoPorClienta=config.clientasMes>0?totalGastosMensual/config.clientasMes:0;
+  const el=document.getElementById('analisis-content');
+
+  const rows=getSERVICIOS().map(sv=>{
+    const costoInsumos=calcCostoServicio(sv.id);
+    const costoTotal=costoInsumos+gastoPorClienta;
+    const margen=sv.precio-costoTotal;
+    const pct=sv.precio>0?Math.round(margen/sv.precio*100):0;
+    return{...sv,costoInsumos,costoTotal,margen,pct};
+  });
+
+  const maxCosto=Math.max(...rows.map(r=>r.costoTotal),1);
+  const avgMargen=Math.round(rows.reduce((s,r)=>s+r.pct,0)/rows.length);
+
+  el.innerHTML=`
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">Gasto fijo/clienta</div><div class="metric-value red">${fmt(gastoPorClienta)}</div><div class="metric-sub">${fmt(totalGastosMensual)}/mes ÷ ${config.clientasMes}</div></div>
+      <div class="metric"><div class="metric-label">Margen promedio</div><div class="metric-value ${avgMargen>=40?'green':avgMargen>=25?'':'red'}">${avgMargen}%</div></div>
+    </div>
+
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;overflow:hidden;margin-bottom:10px">
+      <div style="padding:12px 16px;border-bottom:0.5px solid #f0f0ee">
+        <div style="display:grid;grid-template-columns:1fr 80px 80px 80px 80px 60px;gap:8px;font-size:11px;color:#999;font-weight:500">
+          <span>SERVICIO</span><span style="text-align:right">PRECIO</span><span style="text-align:right">INSUMOS</span><span style="text-align:right">FIJOS</span><span style="text-align:right">COSTO TOTAL</span><span style="text-align:right">MARGEN</span>
+        </div>
+      </div>
+      ${rows.map(r=>`
+        <div style="padding:10px 16px;border-bottom:0.5px solid #f5f5f3;display:grid;grid-template-columns:1fr 80px 80px 80px 80px 60px;gap:8px;align-items:center;font-size:13px">
+          <span style="font-weight:500">${r.nombre}</span>
+          <span style="text-align:right">${fmt(r.precio)}</span>
+          <span style="text-align:right;color:#555">${r.costoInsumos>0?fmt(r.costoInsumos):'—'}</span>
+          <span style="text-align:right;color:#555">${gastoPorClienta>0?fmt(gastoPorClienta):'—'}</span>
+          <span style="text-align:right;color:#c0392b">${r.costoTotal>0?fmt(r.costoTotal):'—'}</span>
+          <span style="text-align:right"><span class="pill ${r.pct>=50?'green':r.pct>=30?'warn':'red'}">${r.costoTotal>0?r.pct+'%':'—'}</span></span>
+        </div>`).join('')}
+    </div>
+
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:12px">Margen por servicio</div>
+      ${rows.filter(r=>r.costoTotal>0).sort((a,b)=>b.pct-a.pct).map(r=>{
+        const color=r.pct>=50?'#3aab6d':r.pct>=30?'#e09c2a':'#d94f4f';
+        return`<div class="bar-row">
+          <div class="bar-label">${r.nombre}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(r.pct,0)}%;background:${color}"></div></div>
+          <div class="bar-val">${r.pct}% · ${fmt(r.margen)}</div>
+        </div>`;
+      }).join('')}
+      ${rows.filter(r=>r.costoTotal===0).length>0?`<div style="font-size:12px;color:#aaa;margin-top:8px">* Los servicios sin insumos asignados no aparecen en el gráfico.</div>`:''}
+    </div>`;
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='servicios') renderServiciosList();
+  if(t==='gastos') renderGastos();
+  if(t==='analisis') renderAnalisis();
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// Init
+const cfg=getConfig();
+renderServiciosList();
+</script>
+</body>
+</html>
