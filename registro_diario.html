@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro diario — Nails x Lolita</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  .nav-title { font-size: 16px; font-weight: 500; }
+  .nav-sub { font-size: 12px; color: #888; margin-top: 1px; }
+  .tabs { display: flex; gap: 6px; padding: 14px 20px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .panel { display: none; padding: 16px 20px 60px; max-width: 720px; margin: 0 auto; }
+  .panel.active { display: block; }
+  .section-sep { font-size: 11px; font-weight: 500; letter-spacing: .5px; color: #999; text-transform: uppercase; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid #ddd; }
+  .btn { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #444; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .btn:hover { background: #f0f0ee; }
+  .btn.primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .btn.primary:hover { background: #333; }
+  .btn.sm { font-size: 12px; padding: 4px 10px; }
+  .btn.danger { color: #c0392b; border-color: #e0b0ae; }
+  .btn.danger:hover { background: #fdf0ef; }
+  .btn.add-service { color: #2a5cc5; border-color: #aac4f5; font-size: 12px; padding: 5px 12px; margin-top: 8px; }
+  .btn.add-service:hover { background: #e8f0fe; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .field-label { font-size: 12px; color: #666; font-weight: 500; }
+  input, select { font-family: inherit; font-size: 13px; color: #1a1a18; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 8px 10px; width: 100%; outline: none; }
+  input:focus, select:focus { border-color: #888; }
+  .hint { font-size: 11px; color: #aaa; margin-top: 3px; }
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 50; max-height: 200px; overflow-y: auto; margin-top: 2px; display: none; }
+  .autocomplete-item { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 0.5px solid #f5f5f3; }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.selected { background: #f0f5ff; }
+  .ac-name { font-weight: 500; color: #1a1a18; }
+  .ac-meta { font-size: 11px; color: #aaa; margin-top: 1px; }
+  .servicio-row { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .servicio-row-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .servicio-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .servicio-num { font-size: 12px; font-weight: 500; color: #888; }
+  .servicio-subtotal { font-size: 12px; color: #1a7a4a; font-weight: 500; }
+  .remove-service { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; padding: 0; line-height: 1; }
+  .remove-service:hover { color: #c0392b; }
+  .ganancia-preview { background: #e6f4ee; border: 0.5px solid #80cfa0; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #1a5a38; margin: 10px 0; display: none; }
+  .ganancia-preview.neg { background: #fdf0ef; border-color: #f0a090; color: #7a2010; }
+  .pago-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 8px; }
+  .pago-item { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 8px; padding: 10px 12px; }
+  .pago-label { font-size: 11px; color: #888; margin-bottom: 5px; font-weight: 500; }
+  .gc-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; }
+  .gc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .gc-code { font-size: 14px; font-weight: 500; }
+  .gc-names { font-size: 12px; color: #888; margin-top: 2px; }
+  .gc-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .pill.saldo { background: #e6f4ee; color: #1a7a4a; font-weight: 500; }
+  .pill.saldo-bajo { background: #fef9e7; color: #7a5a00; font-weight: 500; }
+  .pill.agotada { background: #f0f0ee; color: #999; }
+  .pill.vence { background: #fdf0ef; color: #c0392b; }
+  .pill.vence-ok { background: #f0f0ee; color: #555; }
+  .pill.tipo { background: #e8f0fe; color: #2a5cc5; }
+  .pill.cobro { background: #e8f0fe; color: #2a5cc5; }
+  .pill.pago-ef { background: #fef9e7; color: #7a5a00; }
+  .pill.pago-wi { background: #e6f4ee; color: #1a7a4a; }
+  .pill.pago-re { background: #f5f0fe; color: #6a3ac5; }
+  .pill.pago-gc { background: #fce8f5; color: #9a2a7a; }
+  .pill.ganancia { background: #e6f4ee; color: #1a7a4a; font-weight: 500; }
+  .pill.costo { background: #fef9e7; color: #7a5a00; }
+  .pill.horas { background: #f5f0fe; color: #6a3ac5; }
+  .gc-historial { margin-top: 10px; font-size: 12px; color: #888; border-top: 0.5px solid #f0f0ee; padding-top: 8px; }
+  .gc-historial-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .day-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .day-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid #f0f0ee; }
+  .day-date { font-size: 14px; font-weight: 500; }
+  .day-stats { display: flex; gap: 10px; font-size: 12px; color: #888; flex-wrap: wrap; }
+  .day-stats .green { color: #1a7a4a; font-weight: 500; }
+  .day-body { padding: 0 16px 12px; }
+  .atencion-row { padding: 10px 0; border-bottom: 0.5px solid #f5f5f3; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .atencion-row:last-child { border-bottom: none; }
+  .at-info { flex: 1; min-width: 0; }
+  .at-name { font-size: 13px; font-weight: 500; }
+  .at-services { font-size: 12px; color: #888; margin-top: 2px; }
+  .at-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .metric { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 12px 14px; }
+  .metric-label { font-size: 11px; color: #999; margin-bottom: 5px; }
+  .metric-value { font-size: 20px; font-weight: 500; }
+  .metric-value.green { color: #1a7a4a; }
+  .metric-value.red { color: #c0392b; }
+  .metric-value.blue { color: #2a5cc5; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+  .month-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .month-selector select { width: auto; }
+  .empty { text-align: center; color: #aaa; font-size: 14px; padding: 40px 20px; }
+  .gc-pago-section { background: #fce8f5; border: 0.5px solid #e0a0d0; border-radius: 8px; padding: 12px 14px; margin-top: 8px; display: none; }
+  .gc-pago-section.show { display: block; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div>
+    <div class="nav-title">Registro diario</div>
+    <div class="nav-sub">Nails x Lolita</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" onclick="openGCForm(null)">🎁 Gift card</button>
+    <button class="btn primary" onclick="openForm(null)">+ Nueva atención</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('hoy')">Hoy</button>
+  <button class="tab" onclick="switchTab('historial')">Historial</button>
+  <button class="tab" onclick="switchTab('resumen')">Resumen</button>
+  <button class="tab" onclick="switchTab('giftcards')">Gift cards</button>
+</div>
+
+<div id="panel-hoy" class="panel active">
+  <div id="hoy-metrics"></div>
+  <div id="hoy-list"></div>
+</div>
+<div id="panel-historial" class="panel">
+  <div class="month-selector"><label class="field-label">Mes:</label><select id="hist-mes" onchange="renderHistorial()"></select></div>
+  <div id="historial-list"></div>
+</div>
+<div id="panel-resumen" class="panel">
+  <div class="month-selector"><label class="field-label">Mes:</label><select id="res-mes" onchange="renderResumen()"></select></div>
+  <div id="resumen-content"></div>
+</div>
+<div id="panel-giftcards" class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div id="gc-metrics-mini"></div>
+    <button class="btn primary" onclick="openGCForm(null)">+ Nueva gift card</button>
+  </div>
+  <div id="gc-filter" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+  <div id="gc-list"></div>
+</div>
+
+<!-- ATENCIÓN FORM -->
+<div id="form-overlay" style="display:none;position:fixed;inset:0;background:#f5f5f3;overflow-y:auto;z-index:20;">
+  <div style="background:#fff;border-bottom:0.5px solid #ddd;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5;">
+    <button class="btn" onclick="closeForm()">← Volver</button>
+    <h2 style="font-size:15px;font-weight:500;flex:1" id="form-title">Nueva atención</h2>
+  </div>
+  <div style="padding:20px;max-width:640px;margin:0 auto;">
+    <input type="hidden" id="f-id">
+    <div class="section-sep">Datos generales</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Fecha *</label>
+        <input type="date" id="f-fecha">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Clienta *</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="f-clienta" placeholder="Escribí para buscar..." autocomplete="off" oninput="onClientaInput()" onkeydown="onClientaKey(event)" onfocus="onClientaInput()">
+          <div class="autocomplete-list" id="ac-list"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Horas totales *</label>
+        <input type="number" id="f-horas" placeholder="Ej: 2.5" step="0.5" min="0.5" oninput="calcGanancia()">
+      </div>
+    </div>
+    <div class="section-sep">Servicios realizados</div>
+    <div id="servicios-container"></div>
+    <button class="btn add-service" onclick="addServicioRow()">+ Agregar servicio</button>
+    <div class="section-sep" style="margin-top:20px">Método de pago</div>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">Podés combinar métodos. Si usó gift card, ingresá el monto en ese campo.</p>
+    <div class="pago-row">
+      <div class="pago-item"><div class="pago-label">Efectivo (Ft)</div><input type="number" id="p-efectivo" placeholder="0" oninput="calcGanancia()"></div>
+      <div class="pago-item"><div class="pago-label">Wise (Ft)</div><input type="number" id="p-wise" placeholder="0" oninput="calcGanancia()"></div>
+      <div class="pago-item"><div class="pago-label">Revolut (Ft)</div><input type="number" id="p-revolut" placeholder="0" oninput="calcGanancia()"></div>
+      <div class="pago-item" style="border-color:#e0a0d0;background:#fdf5fb"><div class="pago-label" style="color:#9a2a7a">Gift card (Ft)</div><input type="number" id="p-giftcard" placeholder="0" oninput="onGCAmountChange()"></div>
+    </div>
+    <div class="gc-pago-section" id="gc-pago-section">
+      <div class="form-group">
+        <label class="field-label" style="color:#9a2a7a">Seleccionar gift card</label>
+        <select id="p-gc-select" onchange="onGCSelect()"><option value="">Elegir gift card...</option></select>
+        <div id="gc-saldo-info" style="font-size:12px;color:#9a2a7a;margin-top:4px;display:none"></div>
+      </div>
+    </div>
+    <div class="section-sep" style="margin-top:16px">Costo de materiales</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="field-label">Costo materiales (Ft)</label><input type="number" id="f-costo" placeholder="0" oninput="calcGanancia()"><span class="hint">Se completará automático cuando cargues los insumos</span></div>
+      <div class="form-group"><label class="field-label">Nota de materiales</label><input type="text" id="f-costo-nota" placeholder="Ej: 3g gel base"></div>
+    </div>
+    <div class="ganancia-preview" id="ganancia-preview"></div>
+    <div class="section-sep">Notas</div>
+    <div class="form-grid">
+      <div class="form-group full"><label class="field-label">Observaciones</label><input type="text" id="f-notas" placeholder="Ej: quiere más largo la próxima..."></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button class="btn primary" onclick="saveAtencion()">Guardar atención</button>
+      <button class="btn danger" id="btn-delete-at" onclick="deleteAtencion()" style="display:none">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- GIFT CARD FORM -->
+<div id="gc-overlay" style="display:none;position:fixed;inset:0;background:#f5f5f3;overflow-y:auto;z-index:20;">
+  <div style="background:#fff;border-bottom:0.5px solid #ddd;padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5;">
+    <button class="btn" onclick="closeGCForm()">← Volver</button>
+    <h2 style="font-size:15px;font-weight:500;flex:1" id="gc-form-title">Nueva gift card</h2>
+  </div>
+  <div style="padding:20px;max-width:640px;margin:0 auto;">
+    <input type="hidden" id="gc-id">
+    <div class="section-sep">Datos de la gift card</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="field-label">Código / nombre *</label><input type="text" id="gc-codigo" placeholder="Ej: GC-001"></div>
+      <div class="form-group"><label class="field-label">Tipo *</label><select id="gc-tipo" onchange="toggleGCTipo()"><option value="monto">Monto en Ft</option><option value="servicio">Servicio específico</option></select></div>
+      <div class="form-group" id="gc-monto-group"><label class="field-label">Monto (Ft) *</label><input type="number" id="gc-monto" placeholder="0"></div>
+      <div class="form-group" id="gc-servicio-group" style="display:none"><label class="field-label">Servicio incluido *</label>
+        <select id="gc-servicio">
+          <option value="">Seleccionar...</option>
+          <option>Manicura</option><option>Manicura esmalte tradicional</option><option>Manicura semipermanente</option><option>Manicura estructurada semi</option><option>Pedicura</option><option>Pedicura esmalte tradicional</option><option>Pedicura semipermanente</option><option>Gel X largo S</option><option>Gel X largo M</option><option>Gel X largo L</option><option>Gel X largo XL</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="field-label">Fecha de venta *</label><input type="date" id="gc-fecha-venta"></div>
+      <div class="form-group"><label class="field-label">Fecha de vencimiento *</label><input type="date" id="gc-fecha-vence"></div>
+    </div>
+    <div class="section-sep">Personas</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="field-label">Quién la compró</label><input type="text" id="gc-comprador" placeholder="Nombre del comprador"></div>
+      <div class="form-group"><label class="field-label">Quién la recibe</label><input type="text" id="gc-beneficiaria" placeholder="Nombre de quien la recibe"></div>
+      <div class="form-group"><label class="field-label">Método de pago</label><select id="gc-pago-compra"><option value="Efectivo">Efectivo</option><option value="Wise">Wise</option><option value="Revolut">Revolut</option></select></div>
+      <div class="form-group"><label class="field-label">Notas</label><input type="text" id="gc-notas" placeholder="Ej: regalo de cumpleaños..."></div>
+    </div>
+    <div id="gc-historial-section" style="display:none">
+      <div class="section-sep">Historial de uso</div>
+      <div id="gc-historial-detail"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button class="btn primary" onclick="saveGC()">Guardar gift card</button>
+      <button class="btn danger" id="btn-delete-gc" onclick="deleteGC()" style="display:none">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PRECIOS = {'Manicura':6000,'Manicura esmalte tradicional':8000,'Manicura semipermanente':9000,'Manicura estructurada semi':11000,'Pedicura':9000,'Pedicura esmalte tradicional':10000,'Pedicura semipermanente':13000,'Gel X largo S':14500,'Gel X largo M':15500,'Gel X largo L':16500,'Gel X largo XL':17500};
+const TIERS = {'Tier 1':1000,'Tier 2':2000,'Tier 3':4000,'Tier 4':6000,'Tier 5':8000};
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const SB_URL = 'https://wvqbrdxleotupwxmxpuq.supabase.co';
+const SB_KEY = 'sb_publishable_JjPTnqCD1t-9IbyWf8xxFA_XARL7zw0';
+
+function getStore(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
+function setStore(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function fmt(n){return Math.round(n).toLocaleString('hu-HU')+' Ft';}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+function mesKey(d){return d?d.slice(0,7):todayISO().slice(0,7);}
+function mesLabel(k){const[y,m]=k.split('-');return MESES[parseInt(m)-1]+' '+y;}
+function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return day+'/'+m+'/'+y;}
+
+// ---- AUTOCOMPLETE ----
+let clientasCache = [];
+let acIndex = -1;
+
+async function loadClientas() {
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/clientas?order=nombre.asc', {
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY}
+    });
+    if (res.ok) clientasCache = await res.json();
+  } catch(e) { console.log('No se pudo cargar clientas:', e); }
+}
+
+async function syncClienta(nombre, fecha, servicios) {
+  if (!nombre) return;
+  const existe = clientasCache.find(function(c){ return c.nombre.toLowerCase() === nombre.toLowerCase(); });
+  const nuevosServs = servicios.map(function(s){ return s.servicio; }).filter(Boolean);
+  if (existe) {
+    const citasAct = parseInt(existe.citas) || 0;
+    const servsAct = existe.servicios ? existe.servicios.split('|') : [];
+    const merged = Array.from(new Set(servsAct.concat(nuevosServs))).join('|');
+    const update = {citas: citasAct + 1, servicios: merged || null};
+    try {
+      await fetch(SB_URL+'/rest/v1/clientas?id=eq.'+existe.id, {
+        method: 'PATCH',
+        headers: {'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
+        body: JSON.stringify(update)
+      });
+      existe.citas = update.citas;
+      existe.servicios = update.servicios;
+    } catch(e) { console.log('Error actualizando clienta:', e); }
+  } else {
+    const nueva = {
+      id: Date.now().toString(),
+      nombre: nombre,
+      inicio: fecha ? fecha.slice(0,7) : null,
+      citas: 1,
+      servicios: nuevosServs.join('|') || null
+    };
+    try {
+      await fetch(SB_URL+'/rest/v1/clientas', {
+        method: 'POST',
+        headers: {'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal'},
+        body: JSON.stringify(nueva)
+      });
+      clientasCache.push(nueva);
+      clientasCache.sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+      showToast('Clienta nueva agregada a la base ✓');
+    } catch(e) { console.log('Error creando clienta:', e); }
+  }
+}
+
+function onClientaInput() {
+  const val = document.getElementById('f-clienta').value.toLowerCase().trim();
+  const list = document.getElementById('ac-list');
+  acIndex = -1;
+  const filtered = val
+    ? clientasCache.filter(function(c){ return c.nombre.toLowerCase().indexOf(val) >= 0; }).slice(0,8)
+    : clientasCache.slice(0,8);
+  if (!filtered.length) { list.style.display = 'none'; return; }
+  list.innerHTML = filtered.map(function(c, i) {
+    const safeName = c.nombre.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div class="autocomplete-item" id="ac-item-'+i+'" onclick="selectClienta(\''+safeName+'\')"><div class="ac-name">'+c.nombre+'</div><div class="ac-meta">'+(c.telefono||'')+(c.citas?' · '+c.citas+' citas':'')+'</div></div>';
+  }).join('');
+  list.style.display = 'block';
+}
+
+function selectClienta(nombre) {
+  document.getElementById('f-clienta').value = nombre;
+  document.getElementById('ac-list').style.display = 'none';
+  acIndex = -1;
+}
+
+function onClientaKey(e) {
+  const list = document.getElementById('ac-list');
+  const items = list.querySelectorAll('.autocomplete-item');
+  if (!items.length || list.style.display === 'none') return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); acIndex = Math.min(acIndex+1, items.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); acIndex = Math.max(acIndex-1, -1); }
+  else if (e.key === 'Enter' && acIndex >= 0) { e.preventDefault(); items[acIndex].click(); return; }
+  else if (e.key === 'Escape') { list.style.display = 'none'; return; }
+  items.forEach(function(el,i){ el.classList.toggle('selected', i === acIndex); });
+  if (acIndex >= 0) items[acIndex].scrollIntoView({block:'nearest'});
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.autocomplete-wrap')) {
+    var list = document.getElementById('ac-list');
+    if (list) list.style.display = 'none';
+  }
+});
+
+// ---- GC HELPERS ----
+function getGCSaldo(gc) {
+  if (gc.tipo === 'servicio') return gc.canjeada ? 0 : 1;
+  const usado = (gc.usos||[]).reduce(function(s,u){ return s+u.monto; }, 0);
+  return Math.max(0, (gc.monto||0) - usado);
+}
+function isGCVencida(gc) { return gc.fechaVence && gc.fechaVence < todayISO(); }
+function isGCActiva(gc) { return !isGCVencida(gc) && getGCSaldo(gc) > 0; }
+function getGCsActivas() { return getStore('nxl_giftcards').filter(function(gc){ return isGCActiva(gc); }); }
+
+// ---- SERVICIOS ROWS ----
+var servicioCount = 0;
+function addServicioRow(servicio, tier, monto) {
+  servicio = servicio || ''; tier = tier || ''; monto = monto || '';
+  servicioCount++;
+  var id = servicioCount;
+  var container = document.getElementById('servicios-container');
+  var div = document.createElement('div');
+  div.className = 'servicio-row'; div.id = 'sv-row-'+id;
+  var svOpts = Object.keys(PRECIOS).map(function(s){ return '<option value="'+s+'" '+(s===servicio?'selected':'')+'>'+s+'</option>'; }).join('');
+  var tOpts = Object.keys(TIERS).map(function(t){ return '<option value="'+t+'" '+(t===tier?'selected':'')+'>'+t+' (+'+fmt(TIERS[t])+')</option>'; }).join('');
+  div.innerHTML = '<div class="servicio-row-header"><span class="servicio-num">Servicio '+(container.children.length+1)+'</span><div style="display:flex;align-items:center;gap:8px"><span class="servicio-subtotal" id="sv-sub-'+id+'"></span><button class="remove-service" onclick="removeServicioRow('+id+')">✕</button></div></div><div class="servicio-row-grid"><div class="form-group"><label class="field-label">Servicio</label><select id="sv-s-'+id+'" onchange="onSVChange('+id+')"><option value="">Seleccionar...</option>'+svOpts+'</select></div><div class="form-group"><label class="field-label">Tier de diseño</label><select id="sv-t-'+id+'" onchange="onSVChange('+id+')"><option value="">Sin diseño</option>'+tOpts+'</select></div><div class="form-group"><label class="field-label">Monto (Ft)</label><input type="number" id="sv-m-'+id+'" placeholder="0" value="'+monto+'" oninput="calcGanancia()"></div></div>';
+  container.appendChild(div);
+  if (servicio) onSVChange(id);
+  renumberSV(); calcGanancia();
+}
+function onSVChange(id) {
+  var s = document.getElementById('sv-s-'+id) ? document.getElementById('sv-s-'+id).value : '';
+  var t = document.getElementById('sv-t-'+id) ? document.getElementById('sv-t-'+id).value : '';
+  var p = (PRECIOS[s]||0) + (TIERS[t]||0);
+  if (p) document.getElementById('sv-m-'+id).value = p;
+  var sub = document.getElementById('sv-sub-'+id);
+  if (sub && p) sub.textContent = fmt(p);
+  calcGanancia();
+}
+function removeServicioRow(id) { var el=document.getElementById('sv-row-'+id); if(el) el.remove(); renumberSV(); calcGanancia(); }
+function renumberSV() { document.querySelectorAll('.servicio-num').forEach(function(el,i){ el.textContent='Servicio '+(i+1); }); }
+function getServiciosFromForm() {
+  return Array.from(document.querySelectorAll('.servicio-row')).map(function(row) {
+    var id = row.id.replace('sv-row-','');
+    return { servicio: (document.getElementById('sv-s-'+id)||{}).value||'', tier: (document.getElementById('sv-t-'+id)||{}).value||'', monto: parseFloat((document.getElementById('sv-m-'+id)||{}).value)||0 };
+  }).filter(function(s){ return s.servicio; });
+}
+function getTotalPagos() {
+  return (parseFloat(document.getElementById('p-efectivo').value)||0)+(parseFloat(document.getElementById('p-wise').value)||0)+(parseFloat(document.getElementById('p-revolut').value)||0)+(parseFloat(document.getElementById('p-giftcard').value)||0);
+}
+function onGCAmountChange() {
+  var v = parseFloat(document.getElementById('p-giftcard').value)||0;
+  var sec = document.getElementById('gc-pago-section');
+  if (v > 0) { sec.classList.add('show'); populateGCSelect(); }
+  else { sec.classList.remove('show'); }
+  calcGanancia();
+}
+function populateGCSelect() {
+  var sel = document.getElementById('p-gc-select');
+  var cur = sel.value;
+  var gcs = getGCsActivas();
+  sel.innerHTML = '<option value="">Elegir gift card...</option>' + gcs.map(function(gc){ return '<option value="'+gc.id+'" '+(gc.id===cur?'selected':'')+'>'+gc.codigo+' — '+(gc.beneficiaria||gc.comprador||'sin nombre')+' — Saldo: '+(gc.tipo==='servicio'?gc.servicio:fmt(getGCSaldo(gc)))+'</option>'; }).join('');
+  if (cur) sel.value = cur;
+  onGCSelect();
+}
+function onGCSelect() {
+  var id = document.getElementById('p-gc-select').value;
+  var info = document.getElementById('gc-saldo-info');
+  if (!id) { info.style.display='none'; return; }
+  var gc = getStore('nxl_giftcards').find(function(g){ return g.id===id; });
+  if (!gc) { info.style.display='none'; return; }
+  var saldo = gc.tipo==='servicio' ? 'Servicio: '+gc.servicio : fmt(getGCSaldo(gc));
+  info.style.display='block';
+  info.textContent = 'Saldo: '+saldo+' · Vence: '+fmtDate(gc.fechaVence);
+}
+function calcGanancia() {
+  var servicios = getServiciosFromForm();
+  var totalMonto = servicios.reduce(function(s,sv){ return s+sv.monto; }, 0);
+  var costo = parseFloat(document.getElementById('f-costo').value)||0;
+  var horas = parseFloat(document.getElementById('f-horas').value)||0;
+  var ganancia = totalMonto - costo;
+  var fth = horas > 0 ? ganancia/horas : 0;
+  document.querySelectorAll('.servicio-row').forEach(function(row) {
+    var id = row.id.replace('sv-row-','');
+    var m = parseFloat((document.getElementById('sv-m-'+id)||{}).value)||0;
+    var sub = document.getElementById('sv-sub-'+id);
+    if (sub && m) sub.textContent = fmt(m);
+  });
+  var preview = document.getElementById('ganancia-preview');
+  if (totalMonto > 0) {
+    preview.style.display = 'block';
+    preview.className = 'ganancia-preview' + (ganancia < 0 ? ' neg' : '');
+    var html = 'Total: <strong>'+fmt(totalMonto)+'</strong>';
+    if (costo > 0) html += ' · Mat: '+fmt(costo);
+    html += '  →  Ganancia: <strong>'+fmt(ganancia)+'</strong>';
+    if (horas > 0) html += ' · <strong>'+fmt(fth)+'/h</strong>';
+    preview.innerHTML = html;
+  } else { preview.style.display = 'none'; }
+}
+
+// ---- RENDER CARDS ----
+function pagoClass(p){ return p==='Wise'?'pago-wi':p==='Revolut'?'pago-re':p==='Gift card'?'pago-gc':'pago-ef'; }
+function renderAtencionCard(a) {
+  var totalMonto = (a.servicios||[]).reduce(function(s,sv){ return s+sv.monto; }, 0);
+  var ganancia = totalMonto - (a.costo||0);
+  var fth = a.horas > 0 ? ganancia/a.horas : 0;
+  var serviciosDesc = (a.servicios||[]).map(function(sv){ return sv.servicio+(sv.tier?' + '+sv.tier:''); }).join(' · ');
+  var pagos = a.pagos||{};
+  var pagosPills = Object.entries(pagos).filter(function(kv){ return kv[1]>0; }).map(function(kv){ return '<span class="pill '+pagoClass(kv[0])+'">'+kv[0]+': '+fmt(kv[1])+'</span>'; }).join('');
+  return '<div class="atencion-row"><div class="at-info"><div class="at-name">'+a.clienta+'</div><div class="at-services">'+serviciosDesc+'</div><div class="at-pills"><span class="pill cobro">'+fmt(totalMonto)+'</span>'+pagosPills+'<span class="pill horas">'+a.horas+'h</span>'+(a.costo?'<span class="pill costo">Mat: '+fmt(a.costo)+'</span>':'')+'<span class="pill ganancia">Gan: '+fmt(ganancia)+' · '+fmt(fth)+'/h</span></div>'+(a.notas?'<div style="font-size:12px;color:#aaa;margin-top:4px">'+a.notas+'</div>':'')+'</div><button class="btn sm" onclick="openForm(\''+a.id+'\')">Editar</button></div>';
+}
+
+// ---- HOY ----
+function renderHoy() {
+  var hoy = todayISO();
+  var data = getStore('nxl_atenciones').filter(function(a){ return a.fecha===hoy; });
+  var tc = data.reduce(function(s,a){ return s+(a.servicios||[]).reduce(function(ss,sv){ return ss+sv.monto; },0); }, 0);
+  var tg = tc - data.reduce(function(s,a){ return s+(a.costo||0); }, 0);
+  var th = data.reduce(function(s,a){ return s+a.horas; }, 0);
+  document.getElementById('hoy-metrics').innerHTML = data.length===0?'' : '<div class="metrics"><div class="metric"><div class="metric-label">Clientas hoy</div><div class="metric-value blue">'+data.length+'</div></div><div class="metric"><div class="metric-label">Cobrado</div><div class="metric-value">'+fmt(tc)+'</div></div><div class="metric"><div class="metric-label">Ganancia neta</div><div class="metric-value green">'+fmt(tg)+'</div></div><div class="metric"><div class="metric-label">Horas</div><div class="metric-value">'+Math.round(th*10)/10+'h</div></div></div>';
+  if (!data.length) { document.getElementById('hoy-list').innerHTML='<div class="empty">No hay atenciones hoy.<br>Tocá "+ Nueva atención" para agregar.</div>'; return; }
+  document.getElementById('hoy-list').innerHTML = data.map(renderAtencionCard).join('');
+}
+
+// ---- HISTORIAL ----
+function renderHistorial() {
+  var mes = document.getElementById('hist-mes').value;
+  var data = getStore('nxl_atenciones').filter(function(a){ return mesKey(a.fecha)===mes; });
+  var el = document.getElementById('historial-list');
+  if (!data.length) { el.innerHTML='<div class="empty">Sin atenciones en este mes.</div>'; return; }
+  var porDia = {};
+  data.forEach(function(a){ if(!porDia[a.fecha]) porDia[a.fecha]=[]; porDia[a.fecha].push(a); });
+  el.innerHTML = Object.entries(porDia).sort(function(a,b){ return b[0].localeCompare(a[0]); }).map(function(entry) {
+    var fecha=entry[0]; var items=entry[1];
+    var tc=items.reduce(function(s,a){ return s+(a.servicios||[]).reduce(function(ss,sv){ return ss+sv.monto; },0); },0);
+    var tg=tc-items.reduce(function(s,a){ return s+(a.costo||0); },0);
+    var th=items.reduce(function(s,a){ return s+a.horas; },0);
+    return '<div class="day-card"><div class="day-header"><div class="day-date">'+fmtDate(fecha)+'</div><div class="day-stats"><span>'+items.length+' clienta'+(items.length>1?'s':'')+'</span><span>'+fmt(tc)+'</span><span class="green">'+fmt(tg)+' netos</span><span>'+Math.round(th*10)/10+'h</span></div></div><div class="day-body">'+items.map(renderAtencionCard).join('')+'</div></div>';
+  }).join('');
+}
+
+// ---- RESUMEN ----
+function renderResumen() {
+  var mes = document.getElementById('res-mes').value;
+  var data = getStore('nxl_atenciones').filter(function(a){ return mesKey(a.fecha)===mes; });
+  var el = document.getElementById('resumen-content');
+  if (!data.length) { el.innerHTML='<div class="empty">Sin atenciones en este mes.</div>'; return; }
+  var tc=data.reduce(function(s,a){ return s+(a.servicios||[]).reduce(function(ss,sv){ return ss+sv.monto; },0); },0);
+  var tco=data.reduce(function(s,a){ return s+(a.costo||0); },0);
+  var tg=tc-tco; var th=data.reduce(function(s,a){ return s+a.horas; },0);
+  var fth=th>0?tg/th:0;
+  var porPago={};
+  data.forEach(function(a){ Object.entries(a.pagos||{}).forEach(function(kv){ if(kv[1]>0) porPago[kv[0]]=(porPago[kv[0]]||0)+kv[1]; }); });
+  var porSV={};
+  data.forEach(function(a){ (a.servicios||[]).forEach(function(sv){ if(!porSV[sv.servicio]) porSV[sv.servicio]={count:0,monto:0}; porSV[sv.servicio].count++; porSV[sv.servicio].monto+=sv.monto; }); });
+  var maxM=Math.max.apply(null,Object.values(porSV).map(function(v){ return v.monto; }).concat([1]));
+  el.innerHTML='<div class="metrics"><div class="metric"><div class="metric-label">Clientas</div><div class="metric-value blue">'+data.length+'</div></div><div class="metric"><div class="metric-label">Cobrado</div><div class="metric-value">'+fmt(tc)+'</div></div><div class="metric"><div class="metric-label">Materiales</div><div class="metric-value red">'+fmt(tco)+'</div></div><div class="metric"><div class="metric-label">Ganancia neta</div><div class="metric-value green">'+fmt(tg)+'</div></div><div class="metric"><div class="metric-label">Horas</div><div class="metric-value">'+Math.round(th*10)/10+'h</div></div><div class="metric"><div class="metric-label">Ganancia/hora</div><div class="metric-value">'+fmt(fth)+'</div></div></div><div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px;margin-bottom:10px"><div style="font-size:13px;font-weight:500;margin-bottom:10px">Por método de pago</div>'+Object.entries(porPago).map(function(kv){ return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:0.5px solid #f0f0ee"><span>'+kv[0]+'</span><span>'+fmt(kv[1])+'</span></div>'; }).join('')+'</div><div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px"><div style="font-size:13px;font-weight:500;margin-bottom:10px">Servicios del mes</div>'+Object.entries(porSV).sort(function(a,b){ return b[1].monto-a[1].monto; }).map(function(entry){ var s=entry[0]; var v=entry[1]; var pct=Math.round(v.monto/maxM*100); return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#555">'+s+' <span style="color:#aaa">(×'+v.count+')</span></span><span>'+fmt(v.monto)+'</span></div><div style="background:#f0f0ee;border-radius:4px;height:6px"><div style="height:6px;border-radius:4px;background:#4a7cf5;width:'+pct+'%"></div></div></div>'; }).join('')+'</div>';
+}
+
+// ---- GIFT CARDS ----
+var gcFilter = 'todas';
+function renderGCFilter() {
+  var opts=[['todas','Todas'],['activas','Activas'],['agotadas','Sin saldo'],['vencidas','Vencidas']];
+  document.getElementById('gc-filter').innerHTML=opts.map(function(o){ return '<div class="tab '+(gcFilter===o[0]?'active':'')+'" onclick="setGCFilter(\''+o[0]+'\')" style="font-size:12px;padding:5px 12px">'+o[1]+'</div>'; }).join('');
+}
+function setGCFilter(f){ gcFilter=f; renderGCFilter(); renderGCList(); }
+function renderGCList() {
+  var gcs = getStore('nxl_giftcards');
+  if (gcFilter==='activas') gcs=gcs.filter(isGCActiva);
+  else if (gcFilter==='agotadas') gcs=gcs.filter(function(gc){ return !isGCVencida(gc)&&getGCSaldo(gc)===0; });
+  else if (gcFilter==='vencidas') gcs=gcs.filter(isGCVencida);
+  var total=getStore('nxl_giftcards').length;
+  var activas=getStore('nxl_giftcards').filter(isGCActiva).length;
+  document.getElementById('gc-metrics-mini').innerHTML='<span style="font-size:13px;color:#888">'+total+' gift card'+(total!==1?'s':'')+' · <span style="color:#1a7a4a">'+activas+' activa'+(activas!==1?'s':'')+'</span></span>';
+  var el=document.getElementById('gc-list');
+  if (!gcs.length) { el.innerHTML='<div class="empty">No hay gift cards en esta categoría.</div>'; return; }
+  el.innerHTML=gcs.sort(function(a,b){ return b.fechaVenta.localeCompare(a.fechaVenta); }).map(function(gc) {
+    var saldo=gc.tipo==='servicio'?gc.servicio:fmt(getGCSaldo(gc));
+    var vencida=isGCVencida(gc); var agotada=getGCSaldo(gc)===0&&gc.tipo!=='servicio';
+    var saldoPill=vencida||agotada?'<span class="pill agotada">'+(vencida?'Vencida':'Sin saldo')+'</span>':'<span class="pill saldo">'+(gc.tipo==='monto'?'Saldo: ':'')+saldo+'</span>';
+    var usos=gc.usos||[];
+    return '<div class="gc-card"><div class="gc-header"><div><div class="gc-code">'+gc.codigo+'</div><div class="gc-names">'+(gc.comprador?'De: '+gc.comprador:'')+(gc.beneficiaria?' Para: '+gc.beneficiaria:'')+'</div></div><button class="btn sm" onclick="openGCForm(\''+gc.id+'\')">Editar</button></div><div class="gc-pills"><span class="pill tipo">'+(gc.tipo==='monto'?'Monto en Ft':'Servicio')+'</span>'+saldoPill+'<span class="pill '+(vencida?'vence':'vence-ok')+'">Vence: '+fmtDate(gc.fechaVence)+'</span>'+(gc.tipo==='monto'?'<span class="pill">Total: '+fmt(gc.monto)+'</span>':'')+'</div>'+(usos.length?'<div class="gc-historial">'+usos.map(function(u){ return '<div class="gc-historial-row"><span>'+fmtDate(u.fecha)+' · '+u.clienta+'</span><span style="color:#c0392b">-'+fmt(u.monto)+'</span></div>'; }).join('')+'</div>':'')+(gc.notas?'<div style="font-size:12px;color:#aaa;margin-top:6px">'+gc.notas+'</div>':'')+'</div>';
+  }).join('');
+}
+
+// ---- GC FORM ----
+function toggleGCTipo() {
+  var t=document.getElementById('gc-tipo').value;
+  document.getElementById('gc-monto-group').style.display=t==='monto'?'flex':'none';
+  document.getElementById('gc-servicio-group').style.display=t==='servicio'?'flex':'none';
+}
+function openGCForm(id) {
+  document.getElementById('gc-overlay').style.display='block';
+  document.getElementById('btn-delete-gc').style.display='none';
+  document.getElementById('gc-historial-section').style.display='none';
+  ['gc-id','gc-codigo','gc-monto','gc-fecha-venta','gc-fecha-vence','gc-comprador','gc-beneficiaria','gc-notas'].forEach(function(fid){ document.getElementById(fid).value=''; });
+  document.getElementById('gc-tipo').value='monto';
+  document.getElementById('gc-pago-compra').value='Efectivo';
+  document.getElementById('gc-fecha-venta').value=todayISO();
+  if (id) {
+    var gc=getStore('nxl_giftcards').find(function(g){ return g.id===id; });
+    if (!gc) return;
+    document.getElementById('gc-form-title').textContent=gc.codigo;
+    document.getElementById('gc-id').value=gc.id;
+    document.getElementById('gc-codigo').value=gc.codigo||'';
+    document.getElementById('gc-tipo').value=gc.tipo||'monto';
+    document.getElementById('gc-monto').value=gc.monto||'';
+    document.getElementById('gc-servicio').value=gc.servicio||'';
+    document.getElementById('gc-fecha-venta').value=gc.fechaVenta||'';
+    document.getElementById('gc-fecha-vence').value=gc.fechaVence||'';
+    document.getElementById('gc-comprador').value=gc.comprador||'';
+    document.getElementById('gc-beneficiaria').value=gc.beneficiaria||'';
+    document.getElementById('gc-pago-compra').value=gc.pagoCompra||'Efectivo';
+    document.getElementById('gc-notas').value=gc.notas||'';
+    toggleGCTipo();
+    document.getElementById('btn-delete-gc').style.display='inline-flex';
+    var usos=gc.usos||[];
+    if (usos.length) {
+      document.getElementById('gc-historial-section').style.display='block';
+      document.getElementById('gc-historial-detail').innerHTML=(gc.tipo==='monto'?'<div style="font-size:13px;color:#1a7a4a;font-weight:500;margin-bottom:8px">Saldo restante: '+fmt(getGCSaldo(gc))+'</div>':'')+usos.map(function(u){ return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:0.5px solid #f0f0ee"><span>'+fmtDate(u.fecha)+' — '+u.clienta+'</span><span style="color:#c0392b">-'+fmt(u.monto)+'</span></div>'; }).join('');
+    }
+  } else {
+    document.getElementById('gc-form-title').textContent='Nueva gift card';
+    toggleGCTipo();
+  }
+  window.scrollTo(0,0);
+}
+function closeGCForm(){ document.getElementById('gc-overlay').style.display='none'; renderGCList(); }
+function saveGC() {
+  var codigo=document.getElementById('gc-codigo').value.trim();
+  var fechaVenta=document.getElementById('gc-fecha-venta').value;
+  var fechaVence=document.getElementById('gc-fecha-vence').value;
+  if (!codigo||!fechaVenta||!fechaVence) { alert('Completá código, fecha de venta y vencimiento.'); return; }
+  var id=document.getElementById('gc-id').value||Date.now().toString();
+  var existing=getStore('nxl_giftcards').find(function(g){ return g.id===id; });
+  var gc={id:id,codigo:codigo,tipo:document.getElementById('gc-tipo').value,fechaVenta:fechaVenta,fechaVence:fechaVence,monto:parseFloat(document.getElementById('gc-monto').value)||0,servicio:document.getElementById('gc-servicio').value||null,comprador:document.getElementById('gc-comprador').value.trim()||null,beneficiaria:document.getElementById('gc-beneficiaria').value.trim()||null,pagoCompra:document.getElementById('gc-pago-compra').value,notas:document.getElementById('gc-notas').value.trim()||null,usos:(existing&&existing.usos)||[]};
+  var all=getStore('nxl_giftcards').filter(function(g){ return g.id!==id; });
+  all.push(gc); setStore('nxl_giftcards',all);
+  showToast('Gift card guardada ✓'); closeGCForm();
+}
+function deleteGC() {
+  var id=document.getElementById('gc-id').value;
+  if (!id||!confirm('¿Eliminar esta gift card?')) return;
+  setStore('nxl_giftcards',getStore('nxl_giftcards').filter(function(g){ return g.id!==id; }));
+  showToast('Gift card eliminada'); closeGCForm();
+}
+
+// ---- ATENCIÓN FORM ----
+function openForm(id) {
+  clearForm();
+  document.getElementById('form-overlay').style.display='block';
+  document.getElementById('btn-delete-at').style.display='none';
+  document.getElementById('f-fecha').value=todayISO();
+  if (id) {
+    var a=getStore('nxl_atenciones').find(function(x){ return x.id===id; });
+    if (!a) return;
+    document.getElementById('form-title').textContent=a.clienta;
+    document.getElementById('f-id').value=a.id;
+    document.getElementById('f-fecha').value=a.fecha;
+    document.getElementById('f-clienta').value=a.clienta;
+    document.getElementById('f-horas').value=a.horas;
+    document.getElementById('f-costo').value=a.costo||'';
+    document.getElementById('f-costo-nota').value=a.costoNota||'';
+    document.getElementById('f-notas').value=a.notas||'';
+    var pagos=a.pagos||{};
+    document.getElementById('p-efectivo').value=pagos['Efectivo']||'';
+    document.getElementById('p-wise').value=pagos['Wise']||'';
+    document.getElementById('p-revolut').value=pagos['Revolut']||'';
+    document.getElementById('p-giftcard').value=pagos['Gift card']||'';
+    if (pagos['Gift card']>0) { document.getElementById('gc-pago-section').classList.add('show'); populateGCSelect(); if(a.gcId) setTimeout(function(){ document.getElementById('p-gc-select').value=a.gcId; onGCSelect(); },50); }
+    (a.servicios||[]).forEach(function(sv){ addServicioRow(sv.servicio,sv.tier,sv.monto); });
+    calcGanancia();
+    document.getElementById('btn-delete-at').style.display='inline-flex';
+  } else {
+    document.getElementById('form-title').textContent='Nueva atención';
+    addServicioRow();
+  }
+  window.scrollTo(0,0);
+}
+function clearForm() {
+  ['f-id','f-clienta','f-horas','f-costo','f-costo-nota','f-notas','p-efectivo','p-wise','p-revolut','p-giftcard'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('servicios-container').innerHTML='';
+  document.getElementById('ganancia-preview').style.display='none';
+  document.getElementById('gc-pago-section').classList.remove('show');
+  servicioCount=0;
+}
+function closeForm() {
+  document.getElementById('form-overlay').style.display='none';
+  populateMesSelects(); renderHoy(); renderHistorial(); renderResumen();
+}
+function saveAtencion() {
+  var clienta=document.getElementById('f-clienta').value.trim();
+  var horas=parseFloat(document.getElementById('f-horas').value);
+  var fecha=document.getElementById('f-fecha').value;
+  var servicios=getServiciosFromForm();
+  if (!clienta||!horas||!fecha||!servicios.length) { alert('Completá clienta, fecha, horas y al menos un servicio.'); return; }
+  var id=document.getElementById('f-id').value||Date.now().toString();
+  var pagos={};
+  var ef=parseFloat(document.getElementById('p-efectivo').value)||0;
+  var wi=parseFloat(document.getElementById('p-wise').value)||0;
+  var re=parseFloat(document.getElementById('p-revolut').value)||0;
+  var gc=parseFloat(document.getElementById('p-giftcard').value)||0;
+  if(ef>0) pagos['Efectivo']=ef;
+  if(wi>0) pagos['Wise']=wi;
+  if(re>0) pagos['Revolut']=re;
+  if(gc>0) pagos['Gift card']=gc;
+  var gcId=document.getElementById('p-gc-select').value||null;
+  if(gc>0&&gcId){
+    var gcs=getStore('nxl_giftcards');
+    var gcIdx=gcs.findIndex(function(g){ return g.id===gcId; });
+    if(gcIdx>=0){
+      var existingUso=gcs[gcIdx].usos&&gcs[gcIdx].usos.find(function(u){ return u.atencionId===id; });
+      if(!existingUso){ gcs[gcIdx].usos=gcs[gcIdx].usos||[]; gcs[gcIdx].usos.push({atencionId:id,fecha:fecha,clienta:clienta,monto:gc}); }
+      else { existingUso.monto=gc; }
+      setStore('nxl_giftcards',gcs);
+    }
+  }
+  var atencion={id:id,fecha:fecha,clienta:clienta,servicios:servicios,horas:horas,pagos:pagos,gcId:gcId,costo:parseFloat(document.getElementById('f-costo').value)||0,costoNota:document.getElementById('f-costo-nota').value.trim()||null,notas:document.getElementById('f-notas').value.trim()||null};
+  var all=getStore('nxl_atenciones').filter(function(x){ return x.id!==id; });
+  all.push(atencion); setStore('nxl_atenciones',all);
+  syncClienta(clienta, fecha, servicios);
+  showToast('Atención guardada ✓');
+  closeForm();
+}
+function deleteAtencion() {
+  var id=document.getElementById('f-id').value;
+  if(!id||!confirm('¿Eliminar esta atención?')) return;
+  setStore('nxl_atenciones',getStore('nxl_atenciones').filter(function(x){ return x.id!==id; }));
+  showToast('Atención eliminada'); closeForm();
+}
+
+function getMesesDisponibles() {
+  var data=getStore('nxl_atenciones');
+  var keys=Array.from(new Set(data.map(function(a){ return mesKey(a.fecha); })));
+  var cur=todayISO().slice(0,7);
+  if(keys.indexOf(cur)<0) keys.push(cur);
+  return keys.sort().reverse();
+}
+function populateMesSelects() {
+  var meses=getMesesDisponibles();
+  ['hist-mes','res-mes'].forEach(function(id){
+    var el=document.getElementById(id); if(!el) return;
+    var cur=el.value||todayISO().slice(0,7);
+    el.innerHTML=meses.map(function(m){ return '<option value="'+m+'" '+(m===cur?'selected':'')+'>'+mesLabel(m)+'</option>'; }).join('');
+  });
+}
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  event.target.classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='hoy') renderHoy();
+  if(t==='historial'){ populateMesSelects(); renderHistorial(); }
+  if(t==='resumen'){ populateMesSelects(); renderResumen(); }
+  if(t==='giftcards'){ renderGCFilter(); renderGCList(); }
+}
+function showToast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2500); }
+
+loadClientas();
+populateMesSelects();
+renderHoy();
+renderGCFilter();
+</script>
+</body>
+</html>
