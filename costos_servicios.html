@@ -100,6 +100,7 @@
 <div class="tabs">
   <button class="tab active" onclick="switchTab('servicios')">Insumos por servicio</button>
   <button class="tab" onclick="switchTab('gastos')">Gastos fijos</button>
+  <button class="tab" onclick="switchTab('desinfeccion')">🧼 Desinfección</button>
   <button class="tab" onclick="switchTab('analisis')">Análisis de precios</button>
 </div>
 
@@ -124,6 +125,39 @@
   <div class="section-sep">Gastos fijos mensuales</div>
   <div id="gastos-list"></div>
   <button class="btn add" style="margin-top:8px" onclick="addGastoFijo()">+ Agregar gasto fijo</button>
+</div>
+
+<!-- DESINFECCIÓN -->
+<div id="panel-desinfeccion" class="panel">
+  <p style="font-size:13px;color:#888;margin-bottom:16px">Calculá el costo real de tu protocolo de desinfección por clienta — tiempo y productos incluidos.</p>
+
+  <div class="config-box">
+    <div style="font-size:13px;font-weight:500;margin-bottom:12px">Protocolo de desinfección</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Tiempo total de desinfección por día (min)</label>
+        <input type="number" id="d-tiempo" value="50" oninput="renderDesinfeccion()">
+        <span class="hint">Lavado + alcohol + horno esterilizador</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Clientas promedio por día</label>
+        <input type="number" id="d-clientas-dia" placeholder="Ej: 4" oninput="renderDesinfeccion()">
+        <span class="hint">Para dividir el tiempo entre clientas</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Tu valor hora (Ft)</label>
+        <input type="number" id="d-valor-hora" placeholder="Ej: 8000" oninput="renderDesinfeccion()">
+        <span class="hint">Cuánto vale tu hora de trabajo</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-sep">Productos de desinfección</div>
+  <p style="font-size:12px;color:#888;margin-bottom:10px">Agregá cada producto que usás en el proceso.</p>
+  <div id="d-productos-list"></div>
+  <button class="btn add" style="margin-top:8px" onclick="addProductoDesinfeccion()">+ Agregar producto</button>
+
+  <div id="d-resultado" style="margin-top:20px"></div>
 </div>
 
 <!-- ANÁLISIS -->
@@ -488,6 +522,149 @@ function renderAnalisis(){
     </div>`;
 }
 
+// ---- DESINFECCIÓN ----
+function getProductosDesinfeccion(){return getStore('nxl_desinfeccion_productos');}
+function saveProductosDesinfeccion(v){setStore('nxl_desinfeccion_productos',v);}
+function getDesinfeccionConfig(){return getObj('nxl_desinfeccion_config',{tiempo:50,clientasDia:4,valorHora:0});}
+function saveDesinfeccionConfig(){
+  setObj('nxl_desinfeccion_config',{
+    tiempo:parseFloat(document.getElementById('d-tiempo').value)||50,
+    clientasDia:parseFloat(document.getElementById('d-clientas-dia').value)||4,
+    valorHora:parseFloat(document.getElementById('d-valor-hora').value)||0
+  });
+}
+
+function addProductoDesinfeccion(){
+  const prods=getProductosDesinfeccion();
+  prods.push({id:Date.now().toString(),nombre:'',precio:0,cantidad:1,unidad:'ml',usoXdia:1});
+  saveProductosDesinfeccion(prods);
+  renderDesinfeccion();
+}
+
+function updateProdDesinfeccion(id,field,val){
+  const prods=getProductosDesinfeccion();
+  const idx=prods.findIndex(p=>p.id===id);
+  if(idx<0) return;
+  prods[idx][field]=field==='nombre'||field==='unidad'?val:parseFloat(val)||0;
+  saveProductosDesinfeccion(prods);
+  renderDesinfeccion();
+}
+
+function deleteProdDesinfeccion(id){
+  saveProductosDesinfeccion(getProductosDesinfeccion().filter(p=>p.id!==id));
+  renderDesinfeccion();
+}
+
+function renderDesinfeccion(){
+  saveDesinfeccionConfig();
+  const cfg=getDesinfeccionConfig();
+  const prods=getProductosDesinfeccion();
+
+  // Render product rows
+  const listEl=document.getElementById('d-productos-list');
+  if(!prods.length){
+    listEl.innerHTML=`<div style="color:#aaa;font-size:13px;padding:8px 0">No hay productos cargados aún.</div>`;
+  } else {
+    listEl.innerHTML=prods.map(p=>`
+      <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr 90px 80px 80px 80px auto;gap:8px;align-items:end">
+        <div class="form-group">
+          <label class="field-label">Producto</label>
+          <input type="text" value="${p.nombre}" placeholder="Ej: Alcohol isopropílico" onchange="updateProdDesinfeccion('${p.id}','nombre',this.value)">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Precio (Ft)</label>
+          <input type="number" value="${p.precio||''}" placeholder="0" oninput="updateProdDesinfeccion('${p.id}','precio',this.value)">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Cant. envase</label>
+          <input type="number" value="${p.cantidad||''}" placeholder="0" oninput="updateProdDesinfeccion('${p.id}','cantidad',this.value)">
+        </div>
+        <div class="form-group">
+          <label class="field-label">Unidad</label>
+          <select onchange="updateProdDesinfeccion('${p.id}','unidad',this.value)">
+            <option value="ml" ${p.unidad==='ml'?'selected':''}>ml</option>
+            <option value="g" ${p.unidad==='g'?'selected':''}>g</option>
+            <option value="uds" ${p.unidad==='uds'?'selected':''}>uds</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Uso/día</label>
+          <input type="number" value="${p.usoXdia||''}" placeholder="0" oninput="updateProdDesinfeccion('${p.id}','usoXdia',this.value)">
+          <span class="hint">${p.unidad||'ml'}/día</span>
+        </div>
+        <div style="padding-bottom:4px"><button class="btn danger" onclick="deleteProdDesinfeccion('${p.id}')">✕</button></div>
+      </div>`).join('');
+  }
+
+  // Calcular costos
+  const tiempoMin=cfg.tiempo||50;
+  const clientasDia=cfg.clientasDia||4;
+  const valorHora=cfg.valorHora||0;
+
+  const tiempoPorClienta=tiempoMin/clientasDia;
+  const costoTiempo=valorHora>0?(tiempoPorClienta/60)*valorHora:0;
+
+  const costoProdDia=prods.reduce((s,p)=>{
+    if(!p.precio||!p.cantidad||!p.usoXdia) return s;
+    const precioPorUnidad=p.precio/p.cantidad;
+    return s+(precioPorUnidad*p.usoXdia);
+  },0);
+  const costoProdPorClienta=clientasDia>0?costoProdDia/clientasDia:0;
+  const costoTotalPorClienta=costoTiempo+costoProdPorClienta;
+
+  const resEl=document.getElementById('d-resultado');
+  resEl.innerHTML=`
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:16px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:12px">Cálculo de costos</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+        <div class="metric" style="background:#f5f5f3">
+          <div class="metric-label">Tiempo/clienta</div>
+          <div class="metric-value" style="font-size:18px">${Math.round(tiempoPorClienta*10)/10} min</div>
+          <div class="metric-sub">${tiempoMin} min ÷ ${clientasDia} clientas</div>
+        </div>
+        <div class="metric" style="background:#f5f5f3">
+          <div class="metric-label">Costo tiempo/clienta</div>
+          <div class="metric-value" style="font-size:18px;color:#c0392b">${costoTiempo>0?fmt(costoTiempo):'—'}</div>
+          <div class="metric-sub">${valorHora>0?'':'Ingresá tu valor hora'}</div>
+        </div>
+        <div class="metric" style="background:#f5f5f3">
+          <div class="metric-label">Costo productos/clienta</div>
+          <div class="metric-value" style="font-size:18px;color:#c0392b">${costoProdPorClienta>0?fmt(costoProdPorClienta):'—'}</div>
+          <div class="metric-sub">${fmt(costoProdDia)}/día ÷ ${clientasDia}</div>
+        </div>
+        <div class="metric" style="background:#1a1a18">
+          <div class="metric-label" style="color:#888">Costo total/clienta</div>
+          <div class="metric-value" style="color:#fff">${costoTotalPorClienta>0?fmt(costoTotalPorClienta):'—'}</div>
+          <div class="metric-sub" style="color:#666">tiempo + productos</div>
+        </div>
+      </div>
+      ${costoTotalPorClienta>0?`<div style="background:#fef9e7;border:0.5px solid #f0d060;border-radius:8px;padding:10px 14px;font-size:13px;color:#7a5a00">
+        💡 Este costo (<strong>${fmt(costoTotalPorClienta)}/clienta</strong>) debería sumarse al análisis de precios. Podés agregarlo como gasto fijo mensual en la pestaña "Gastos fijos" usando el total mensual: <strong>${fmt(costoTotalPorClienta*clientasDia*22)}</strong> aprox. (22 días hábiles).
+      </div>`:''}
+    </div>
+
+    ${prods.length>0?`<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px">Desglose por producto</div>
+      ${prods.filter(p=>p.precio&&p.cantidad&&p.usoXdia).map(p=>{
+        const cpu=p.precio/p.cantidad;
+        const costoDia=cpu*p.usoXdia;
+        const costoClienta=clientasDia>0?costoDia/clientasDia:0;
+        return`<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:0.5px solid #f0f0ee">
+          <span style="color:#555">${p.nombre||'Sin nombre'} <span style="color:#aaa;font-size:11px">(${p.usoXdia} ${p.unidad}/día)</span></span>
+          <span>${fmt(costoClienta)}/clienta</span>
+        </div>`;
+      }).join('')}
+    </div>`:''}`;
+}
+
+function initDesinfeccion(){
+  const cfg=getDesinfeccionConfig();
+  document.getElementById('d-tiempo').value=cfg.tiempo||50;
+  document.getElementById('d-clientas-dia').value=cfg.clientasDia||'';
+  document.getElementById('d-valor-hora').value=cfg.valorHora||'';
+  renderDesinfeccion();
+}
+
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -496,6 +673,7 @@ function switchTab(t){
   if(t==='servicios') renderServiciosList();
   if(t==='gastos') renderGastos();
   if(t==='analisis') renderAnalisis();
+  if(t==='desinfeccion') initDesinfeccion();
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
