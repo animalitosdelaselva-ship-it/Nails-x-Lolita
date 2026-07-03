@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario — Nails x Lolita</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  .nav-title { font-size: 16px; font-weight: 500; }
+  .nav-sub { font-size: 12px; color: #888; margin-top: 1px; }
+  .tabs { display: flex; gap: 6px; padding: 14px 20px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .panel { display: none; padding: 16px 20px 60px; max-width: 720px; margin: 0 auto; }
+  .panel.active { display: block; }
+  .section-sep { font-size: 11px; font-weight: 500; letter-spacing: .5px; color: #999; text-transform: uppercase; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 0.5px solid #ddd; }
+  .btn { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #444; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .btn:hover { background: #f0f0ee; }
+  .btn.primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .btn.primary:hover { background: #333; }
+  .btn.sm { font-size: 12px; padding: 4px 10px; }
+  .btn.danger { color: #c0392b; border-color: #e0b0ae; font-size: 12px; padding: 4px 10px; }
+  .btn.danger:hover { background: #fdf0ef; }
+  .btn.warn { color: #b45309; border-color: #f0d060; font-size: 12px; padding: 4px 10px; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .field-label { font-size: 12px; color: #666; font-weight: 500; }
+  input, select { font-family: inherit; font-size: 13px; color: #1a1a18; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 8px 10px; width: 100%; outline: none; }
+  input:focus, select:focus { border-color: #888; }
+  .hint { font-size: 11px; color: #aaa; margin-top: 3px; }
+
+  /* STOCK CARDS */
+  .cat-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .cat-chip { padding: 5px 12px; border-radius: 20px; border: 0.5px solid #ddd; background: #f5f5f3; font-size: 12px; color: #555; cursor: pointer; white-space: nowrap; }
+  .cat-chip.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+
+  .stock-card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; }
+  .stock-card.alerta { border-color: #f0a090; background: #fffaf9; }
+  .stock-card.critico { border-color: #c0392b; background: #fdf5f5; }
+  .stock-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .stock-name { font-size: 14px; font-weight: 500; }
+  .stock-cat { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .stock-brand { font-size: 12px; color: #888; margin-top: 1px; }
+  .stock-right { text-align: right; flex-shrink: 0; }
+  .stock-qty { font-size: 18px; font-weight: 500; }
+  .stock-qty.ok { color: #1a7a4a; }
+  .stock-qty.warn { color: #b45309; }
+  .stock-qty.crit { color: #c0392b; }
+  .stock-unit { font-size: 11px; color: #aaa; }
+  .stock-bar { height: 4px; background: #f0f0ee; border-radius: 4px; margin: 8px 0; }
+  .stock-bar-fill { height: 4px; border-radius: 4px; transition: width .3s; }
+  .stock-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .pill.green { background: #e6f4ee; color: #1a7a4a; }
+  .pill.warn { background: #fef9e7; color: #7a5a00; }
+  .pill.red { background: #fdf0ef; color: #c0392b; font-weight: 500; }
+  .pill.gray { background: #f0f0ee; color: #555; }
+  .pill.blue { background: #e8f0fe; color: #2a5cc5; }
+  .stock-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+  /* ENTRADA FORM */
+  .form-overlay { display: none; position: fixed; inset: 0; background: #f5f5f3; overflow-y: auto; z-index: 20; }
+  .form-overlay.open { display: block; }
+  .form-nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; }
+  .form-nav h2 { font-size: 15px; font-weight: 500; flex: 1; }
+  .form-body { padding: 20px; max-width: 640px; margin: 0 auto; }
+
+  /* HISTORIAL */
+  .historial-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid #f0f0ee; font-size: 13px; gap: 10px; }
+  .historial-row:last-child { border-bottom: none; }
+  .hist-left { flex: 1; min-width: 0; }
+  .hist-nombre { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hist-meta { font-size: 11px; color: #888; margin-top: 2px; }
+  .hist-right { text-align: right; flex-shrink: 0; }
+  .hist-qty { font-size: 13px; font-weight: 500; color: #1a7a4a; }
+  .hist-precio { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* METRICS */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 10px; margin-bottom: 16px; }
+  .metric { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 10px; padding: 12px 14px; }
+  .metric-label { font-size: 11px; color: #999; margin-bottom: 5px; }
+  .metric-value { font-size: 20px; font-weight: 500; }
+  .metric-value.green { color: #1a7a4a; }
+  .metric-value.red { color: #c0392b; }
+  .metric-value.warn { color: #b45309; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+
+  .month-selector { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .month-selector select { width: auto; }
+
+  .empty { text-align: center; color: #aaa; font-size: 14px; padding: 40px 20px; line-height: 1.6; }
+  .alert-box { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 8px; }
+  .alert-box.warn { background: #fef9e7; border: 0.5px solid #f0d060; color: #7a5a00; }
+  .alert-box.crit { background: #fdf0ef; border: 0.5px solid #f0a090; color: #7a2010; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a18; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div>
+    <div class="nav-title">Inventario</div>
+    <div class="nav-sub">Nails x Lolita</div>
+  </div>
+  <button class="btn primary" onclick="openEntrada(null)">+ Entrada de stock</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('stock')">Stock actual</button>
+  <button class="tab" onclick="switchTab('entradas')">Historial de compras</button>
+  <button class="tab" onclick="switchTab('gastos')">Gastos por mes</button>
+</div>
+
+<!-- STOCK ACTUAL -->
+<div id="panel-stock" class="panel active">
+  <div id="alertas-stock"></div>
+  <div class="cat-filter" id="cat-filter"></div>
+  <div id="stock-list"></div>
+</div>
+
+<!-- HISTORIAL ENTRADAS -->
+<div id="panel-entradas" class="panel">
+  <div class="month-selector">
+    <label class="field-label">Mes:</label>
+    <select id="ent-mes" onchange="renderEntradas()"></select>
+  </div>
+  <div id="entradas-list"></div>
+</div>
+
+<!-- GASTOS POR MES -->
+<div id="panel-gastos" class="panel">
+  <p style="font-size:13px;color:#888;margin-bottom:16px">Cuánto gastaste en reposición de insumos cada mes.</p>
+  <div id="gastos-mes-content"></div>
+</div>
+
+<!-- ENTRADA FORM -->
+<div class="form-overlay" id="form-entrada">
+  <div class="form-nav">
+    <button class="btn" onclick="closeEntrada()">← Volver</button>
+    <h2 id="entrada-title">Nueva entrada de stock</h2>
+  </div>
+  <div class="form-body">
+    <input type="hidden" id="e-id">
+    <div class="section-sep">¿Qué compraste?</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="field-label">Insumo *</label>
+        <select id="e-insumo" onchange="onInsumoSelect()">
+          <option value="">Seleccionar insumo...</option>
+        </select>
+        <span class="hint">Los insumos vienen de tu base de datos de insumos</span>
+      </div>
+      <div class="form-group" id="e-insumo-info" style="display:none">
+        <div style="background:#f5f5f3;border-radius:8px;padding:10px 12px;font-size:12px;color:#666;line-height:1.6" id="e-insumo-detail"></div>
+      </div>
+    </div>
+
+    <div class="section-sep">Detalles de la compra</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Fecha de compra *</label>
+        <input type="date" id="e-fecha">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Cantidad comprada *</label>
+        <input type="number" id="e-cantidad" placeholder="Ej: 3" min="0.01" step="0.01" oninput="calcTotal()">
+        <span class="hint" id="e-unidad-hint">Unidades / g / ml</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Precio unitario (Ft) *</label>
+        <input type="number" id="e-precio-unit" placeholder="0" oninput="calcTotal()">
+        <span class="hint">Precio por unidad/envase</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Total pagado (Ft)</label>
+        <input type="number" id="e-total" placeholder="0" style="background:#f5f5f3">
+        <span class="hint">Se calcula automático</span>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Tienda / proveedor</label>
+        <input type="text" id="e-tienda" placeholder="Ej: Amazon, tienda local...">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Método de pago</label>
+        <select id="e-pago">
+          <option value="Efectivo">Efectivo</option>
+          <option value="Wise">Wise</option>
+          <option value="Revolut">Revolut</option>
+          <option value="Tarjeta">Tarjeta</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label class="field-label">Notas</label>
+        <input type="text" id="e-notas" placeholder="Ej: nueva fórmula, cambié de marca...">
+      </div>
+    </div>
+
+    <div id="total-preview" style="display:none;background:#e6f4ee;border:0.5px solid #80cfa0;border-radius:8px;padding:10px 14px;font-size:13px;color:#1a5a38;margin-bottom:16px"></div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" onclick="saveEntrada()">Guardar entrada</button>
+      <button class="btn danger" id="btn-delete-entrada" onclick="deleteEntrada()" style="display:none">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- AJUSTE RAPIDO OVERLAY -->
+<div class="form-overlay" id="form-ajuste">
+  <div class="form-nav">
+    <button class="btn" onclick="closeAjuste()">← Volver</button>
+    <h2 id="ajuste-title">Ajustar stock</h2>
+  </div>
+  <div class="form-body">
+    <input type="hidden" id="aj-insumo-id">
+    <div class="section-sep">Ajuste manual de stock</div>
+    <p style="font-size:13px;color:#888;margin-bottom:16px">Usá esto para corregir el stock si hay diferencia entre lo que dice el sistema y lo que tenés físicamente.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="field-label">Stock actual en sistema</label>
+        <input type="number" id="aj-actual" disabled style="background:#f5f5f3;color:#888">
+      </div>
+      <div class="form-group">
+        <label class="field-label">Nuevo stock real *</label>
+        <input type="number" id="aj-nuevo" placeholder="0" min="0" step="0.01">
+        <span class="hint" id="aj-unidad"></span>
+      </div>
+      <div class="form-group full">
+        <label class="field-label">Motivo del ajuste</label>
+        <input type="text" id="aj-motivo" placeholder="Ej: conteo físico, producto vencido, rotura...">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn primary" onclick="saveAjuste()">Guardar ajuste</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const CATS = ['Desechables','Cortesías','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
+
+function getStore(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
+function setStore(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function getObj(k,d={}){try{return JSON.parse(localStorage.getItem(k))||d;}catch(e){return d;}}
+function setObj(k,v){localStorage.setItem(k,JSON.stringify(v));}
+function fmt(n){return Math.round(n).toLocaleString('hu-HU')+' Ft';}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+function mesKey(d){return d?d.slice(0,7):todayISO().slice(0,7);}
+function mesLabel(k){const[y,m]=k.split('-');return`${MESES[parseInt(m)-1]} ${y}`;}
+function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
+
+// Stock = suma de entradas - consumo estimado por atenciones
+function getStockActual(insumoId){
+  const stock=getObj('nxl_stock_actual',{});
+  return stock[insumoId]!==undefined ? stock[insumoId] : (getInsumoBase(insumoId)?.stock||0);
+}
+function setStockActual(insumoId, qty){
+  const stock=getObj('nxl_stock_actual',{});
+  stock[insumoId]=qty;
+  setObj('nxl_stock_actual',stock);
+}
+function getInsumoBase(id){return getStore('nxl_insumos').find(i=>i.id===id);}
+
+let activeCat='Todos';
+
+// ---- ALERTAS ----
+function renderAlertas(){
+  const insumos=getStore('nxl_insumos');
+  const criticos=[], bajos=[];
+  insumos.forEach(ins=>{
+    const qty=getStockActual(ins.id);
+    const min=parseFloat(ins.stockMin)||0;
+    if(min>0){
+      if(qty<=0) criticos.push(ins.nombre);
+      else if(qty<=min) bajos.push(ins.nombre);
+    }
+  });
+  let html='';
+  if(criticos.length) html+=`<div class="alert-box crit">🚨 <strong>Sin stock:</strong> ${criticos.join(', ')}</div>`;
+  if(bajos.length) html+=`<div class="alert-box warn">⚠️ <strong>Stock bajo:</strong> ${bajos.join(', ')}</div>`;
+  document.getElementById('alertas-stock').innerHTML=html;
+}
+
+// ---- CAT FILTER ----
+function renderCatFilter(){
+  const all=['Todos',...CATS];
+  document.getElementById('cat-filter').innerHTML=all.map(c=>
+    `<div class="cat-chip ${activeCat===c?'active':''}" onclick="setCat('${c}')">${c}</div>`
+  ).join('');
+}
+function setCat(c){activeCat=c;renderCatFilter();renderStock();}
+
+// ---- STOCK LIST ----
+function renderStock(){
+  const insumos=getStore('nxl_insumos');
+  const filtered=activeCat==='Todos'?insumos:insumos.filter(i=>i.categoria===activeCat);
+  const el=document.getElementById('stock-list');
+  if(!insumos.length){
+    el.innerHTML=`<div class="empty">Primero cargá insumos en la base de insumos.<br><small>Una vez cargados aparecerán aquí con su stock.</small></div>`;
+    return;
+  }
+  if(!filtered.length){el.innerHTML=`<div class="empty">Sin insumos en esta categoría.</div>`;return;}
+
+  el.innerHTML=filtered.map(ins=>{
+    const qty=getStockActual(ins.id);
+    const min=parseFloat(ins.stockMin)||0;
+    const esCritico=min>0&&qty<=0;
+    const esAlerta=min>0&&qty>0&&qty<=min;
+    const pct=min>0?Math.min(100,Math.round(qty/min*100)):qty>0?100:0;
+    const barColor=esCritico?'#c0392b':esAlerta?'#e09c2a':'#3aab6d';
+    const qtyClass=esCritico?'crit':esAlerta?'warn':'ok';
+    const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'uds':'uds';
+
+    return`<div class="stock-card ${esCritico?'critico':esAlerta?'alerta':''}">
+      <div class="stock-header">
+        <div style="flex:1;min-width:0">
+          <div class="stock-name">${ins.nombre}</div>
+          <div class="stock-cat">${ins.categoria}</div>
+          ${ins.marca||ins.tienda?`<div class="stock-brand">${[ins.marca,ins.tienda].filter(Boolean).join(' · ')}</div>`:''}
+        </div>
+        <div class="stock-right">
+          <div class="stock-qty ${qtyClass}">${Math.round(qty*100)/100}</div>
+          <div class="stock-unit">${unidad}</div>
+          ${min>0?`<div style="font-size:10px;color:#aaa;margin-top:2px">mín: ${min}</div>`:''}
+        </div>
+      </div>
+      ${min>0?`<div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`:'<div style="height:8px"></div>'}
+      <div class="stock-meta">
+        ${esCritico?`<span class="pill red">🚨 Sin stock — reponer</span>`:''}
+        ${esAlerta&&!esCritico?`<span class="pill warn">⚠ Stock bajo</span>`:''}
+        ${ins.precio?`<span class="pill gray">Precio: ${fmt(ins.precio)}</span>`:''}
+        ${ins.costoPorClienta?`<span class="pill blue">${fmt(ins.costoPorClienta)}/clienta</span>`:''}
+      </div>
+      <div class="stock-actions">
+        <button class="btn sm" onclick="openEntrada('${ins.id}')">+ Entrada</button>
+        <button class="btn sm" onclick="openAjuste('${ins.id}')">Ajustar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- ENTRADA FORM ----
+function populateInsumoSelect(preselect=''){
+  const insumos=getStore('nxl_insumos');
+  const sel=document.getElementById('e-insumo');
+  sel.innerHTML=`<option value="">Seleccionar insumo...</option>`+
+    insumos.map(i=>`<option value="${i.id}" ${i.id===preselect?'selected':''}>[${i.categoria}] ${i.nombre}</option>`).join('');
+  if(preselect) onInsumoSelect();
+}
+
+function onInsumoSelect(){
+  const id=document.getElementById('e-insumo').value;
+  const ins=getInsumoBase(id);
+  const infoEl=document.getElementById('e-insumo-info');
+  const detailEl=document.getElementById('e-insumo-detail');
+  if(!ins){infoEl.style.display='none';return;}
+  const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'uds':'uds';
+  document.getElementById('e-unidad-hint').textContent=`En ${unidad}`;
+  document.getElementById('e-tienda').value=ins.tienda||'';
+  if(ins.precio) document.getElementById('e-precio-unit').value=ins.precio;
+  detailEl.innerHTML=`<strong>${ins.nombre}</strong> · ${ins.categoria}${ins.marca?' · '+ins.marca:''}${ins.tienda?' · '+ins.tienda:''}<br>Stock actual: <strong>${Math.round(getStockActual(id)*100)/100} ${unidad}</strong>${ins.stockMin?' · Mínimo: '+ins.stockMin:''}`;
+  infoEl.style.display='block';
+  calcTotal();
+}
+
+function calcTotal(){
+  const qty=parseFloat(document.getElementById('e-cantidad').value)||0;
+  const pu=parseFloat(document.getElementById('e-precio-unit').value)||0;
+  const total=qty*pu;
+  document.getElementById('e-total').value=total||'';
+  const prev=document.getElementById('total-preview');
+  if(total>0){prev.style.display='block';prev.textContent=`Total: ${fmt(total)} (${qty} × ${fmt(pu)})`;}
+  else{prev.style.display='none';}
+}
+
+function openEntrada(insumoId){
+  document.getElementById('e-id').value='';
+  document.getElementById('e-fecha').value=todayISO();
+  document.getElementById('e-cantidad').value='';
+  document.getElementById('e-precio-unit').value='';
+  document.getElementById('e-total').value='';
+  document.getElementById('e-tienda').value='';
+  document.getElementById('e-notas').value='';
+  document.getElementById('e-pago').value='Efectivo';
+  document.getElementById('e-insumo-info').style.display='none';
+  document.getElementById('total-preview').style.display='none';
+  document.getElementById('btn-delete-entrada').style.display='none';
+  document.getElementById('entrada-title').textContent='Nueva entrada de stock';
+  populateInsumoSelect(insumoId||'');
+  document.getElementById('form-entrada').classList.add('open');
+  window.scrollTo(0,0);
+}
+
+function closeEntrada(){
+  document.getElementById('form-entrada').classList.remove('open');
+  renderStock();renderAlertas();renderEntradas();renderGastosMes();
+}
+
+function saveEntrada(){
+  const insumoId=document.getElementById('e-insumo').value;
+  const fecha=document.getElementById('e-fecha').value;
+  const cantidad=parseFloat(document.getElementById('e-cantidad').value);
+  const precioUnit=parseFloat(document.getElementById('e-precio-unit').value)||0;
+  if(!insumoId||!fecha||!cantidad){alert('Completá insumo, fecha y cantidad.');return;}
+  const id=document.getElementById('e-id').value||Date.now().toString();
+  const total=cantidad*precioUnit;
+  const entrada={
+    id,insumoId,fecha,cantidad,precioUnit,total,
+    tienda:document.getElementById('e-tienda').value.trim()||null,
+    pago:document.getElementById('e-pago').value,
+    notas:document.getElementById('e-notas').value.trim()||null
+  };
+  // Update stock
+  const stockAnterior=getStockActual(insumoId);
+  const entradas=getStore('nxl_entradas');
+  const existing=entradas.find(e=>e.id===id);
+  let nuevoStock=stockAnterior;
+  if(existing) nuevoStock=stockAnterior-existing.cantidad+cantidad;
+  else nuevoStock=stockAnterior+cantidad;
+  setStockActual(insumoId,Math.max(0,nuevoStock));
+  // Save entrada
+  const all=entradas.filter(e=>e.id!==id);
+  all.push(entrada);
+  setStore('nxl_entradas',all);
+  // Update insumo precio si cambió
+  const insumos=getStore('nxl_insumos');
+  const idx=insumos.findIndex(i=>i.id===insumoId);
+  if(idx>=0&&precioUnit>0){insumos[idx].precio=precioUnit;setStore('nxl_insumos',insumos);}
+  showToast('Entrada guardada ✓');
+  closeEntrada();
+}
+
+function deleteEntrada(){
+  const id=document.getElementById('e-id').value;
+  if(!id||!confirm('¿Eliminar esta entrada?'))return;
+  const entradas=getStore('nxl_entradas');
+  const entrada=entradas.find(e=>e.id===id);
+  if(entrada){
+    const stock=getStockActual(entrada.insumoId);
+    setStockActual(entrada.insumoId,Math.max(0,stock-entrada.cantidad));
+  }
+  setStore('nxl_entradas',entradas.filter(e=>e.id!==id));
+  showToast('Entrada eliminada');closeEntrada();
+}
+
+// ---- AJUSTE ----
+function openAjuste(insumoId){
+  const ins=getInsumoBase(insumoId);
+  if(!ins)return;
+  document.getElementById('aj-insumo-id').value=insumoId;
+  document.getElementById('ajuste-title').textContent='Ajustar: '+ins.nombre;
+  document.getElementById('aj-actual').value=Math.round(getStockActual(insumoId)*100)/100;
+  document.getElementById('aj-nuevo').value='';
+  document.getElementById('aj-motivo').value='';
+  const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'uds':'uds';
+  document.getElementById('aj-unidad').textContent=unidad;
+  document.getElementById('form-ajuste').classList.add('open');
+  window.scrollTo(0,0);
+}
+function closeAjuste(){document.getElementById('form-ajuste').classList.remove('open');renderStock();renderAlertas();}
+function saveAjuste(){
+  const id=document.getElementById('aj-insumo-id').value;
+  const nuevo=parseFloat(document.getElementById('aj-nuevo').value);
+  if(!id||isNaN(nuevo)){alert('Ingresá el nuevo stock.');return;}
+  setStockActual(id,nuevo);
+  // Log ajuste
+  const ajustes=getStore('nxl_ajustes');
+  ajustes.push({id:Date.now().toString(),insumoId:id,fecha:todayISO(),stockAnterior:parseFloat(document.getElementById('aj-actual').value),stockNuevo:nuevo,motivo:document.getElementById('aj-motivo').value.trim()||null});
+  setStore('nxl_ajustes',ajustes);
+  showToast('Stock ajustado ✓');closeAjuste();
+}
+
+// ---- HISTORIAL ENTRADAS ----
+function getMesesEntradas(){
+  const data=getStore('nxl_entradas');
+  const keys=[...new Set(data.map(e=>mesKey(e.fecha)))];
+  const cur=todayISO().slice(0,7);
+  if(!keys.includes(cur))keys.push(cur);
+  return keys.sort().reverse();
+}
+function populateMesSelect(){
+  const meses=getMesesEntradas();
+  const el=document.getElementById('ent-mes');
+  const cur=el.value||todayISO().slice(0,7);
+  el.innerHTML=meses.map(m=>`<option value="${m}" ${m===cur?'selected':''}>${mesLabel(m)}</option>`).join('');
+}
+function renderEntradas(){
+  const mes=document.getElementById('ent-mes').value;
+  const data=getStore('nxl_entradas').filter(e=>mesKey(e.fecha)===mes).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const el=document.getElementById('entradas-list');
+  if(!data.length){el.innerHTML=`<div class="empty">Sin compras registradas en este mes.</div>`;return;}
+  const total=data.reduce((s,e)=>s+e.total,0);
+  el.innerHTML=`<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:13px;font-weight:500">${data.length} compra${data.length!==1?'s':''} en ${mesLabel(mes)}</span>
+      <span style="font-size:14px;font-weight:500;color:#c0392b">${fmt(total)}</span>
+    </div>
+    ${data.map(e=>{
+      const ins=getInsumoBase(e.insumoId);
+      return`<div class="historial-row">
+        <div class="hist-left">
+          <div class="hist-nombre">${ins?.nombre||'Insumo eliminado'}</div>
+          <div class="hist-meta">${fmtDate(e.fecha)} · ${e.tienda||ins?.tienda||'Sin tienda'} · ${e.pago}${e.notas?' · '+e.notas:''}</div>
+        </div>
+        <div class="hist-right">
+          <div class="hist-qty">+${e.cantidad} ${ins?.porPeso==='si'?(ins?.unidad||'g'):'uds'}</div>
+          <div class="hist-precio">${e.total>0?fmt(e.total):'—'}</div>
+        </div>
+        <button class="btn sm" onclick="editEntrada('${e.id}')" style="margin-left:8px;flex-shrink:0">✎</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function editEntrada(id){
+  const entrada=getStore('nxl_entradas').find(e=>e.id===id);
+  if(!entrada)return;
+  populateInsumoSelect(entrada.insumoId);
+  document.getElementById('e-id').value=entrada.id;
+  document.getElementById('e-fecha').value=entrada.fecha;
+  document.getElementById('e-cantidad').value=entrada.cantidad;
+  document.getElementById('e-precio-unit').value=entrada.precioUnit||'';
+  document.getElementById('e-total').value=entrada.total||'';
+  document.getElementById('e-tienda').value=entrada.tienda||'';
+  document.getElementById('e-pago').value=entrada.pago||'Efectivo';
+  document.getElementById('e-notas').value=entrada.notas||'';
+  document.getElementById('btn-delete-entrada').style.display='inline-flex';
+  document.getElementById('entrada-title').textContent='Editar entrada';
+  setTimeout(()=>{onInsumoSelect();calcTotal();},50);
+  document.getElementById('form-entrada').classList.add('open');
+  window.scrollTo(0,0);
+}
+
+// ---- GASTOS POR MES ----
+function renderGastosMes(){
+  const data=getStore('nxl_entradas');
+  const el=document.getElementById('gastos-mes-content');
+  if(!data.length){el.innerHTML=`<div class="empty">Sin compras registradas todavía.</div>`;return;}
+  const porMes={};
+  data.forEach(e=>{
+    const k=mesKey(e.fecha);
+    if(!porMes[k])porMes[k]={total:0,items:[],count:0};
+    porMes[k].total+=e.total;
+    porMes[k].count++;
+    const ins=getInsumoBase(e.insumoId);
+    porMes[k].items.push({nombre:ins?.nombre||'—',total:e.total,cat:ins?.categoria||'—'});
+  });
+  const meses=Object.keys(porMes).sort().reverse();
+  const maxTotal=Math.max(...meses.map(m=>porMes[m].total),1);
+
+  el.innerHTML=`<div class="metrics">
+    <div class="metric"><div class="metric-label">Total gastado</div><div class="metric-value red">${fmt(data.reduce((s,e)=>s+e.total,0))}</div><div class="metric-sub">histórico</div></div>
+    <div class="metric"><div class="metric-label">Promedio mensual</div><div class="metric-value warn">${fmt(data.reduce((s,e)=>s+e.total,0)/meses.length)}</div></div>
+    <div class="metric"><div class="metric-label">Compras registradas</div><div class="metric-value">${data.length}</div></div>
+  </div>`+
+  meses.map(mes=>{
+    const d=porMes[mes];
+    const pct=Math.round(d.total/maxTotal*100);
+    const porCat={};
+    d.items.forEach(i=>{porCat[i.cat]=(porCat[i.cat]||0)+i.total;});
+    return`<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:14px;font-weight:500">${mesLabel(mes)}</span>
+        <span style="font-size:14px;font-weight:500;color:#c0392b">${fmt(d.total)}</span>
+      </div>
+      <div style="background:#f0f0ee;border-radius:4px;height:6px;margin-bottom:10px">
+        <div style="height:6px;border-radius:4px;background:#4a7cf5;width:${pct}%"></div>
+      </div>
+      ${Object.entries(porCat).sort((a,b)=>b[1]-a[1]).map(([cat,total])=>`
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:0.5px solid #f5f5f3;color:#666">
+          <span>${cat}</span><span>${fmt(total)}</span>
+        </div>`).join('')}
+      <div style="font-size:11px;color:#aaa;margin-top:6px">${d.count} compra${d.count!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='stock'){renderAlertas();renderCatFilter();renderStock();}
+  if(t==='entradas'){populateMesSelect();renderEntradas();}
+  if(t==='gastos') renderGastosMes();
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+renderAlertas();renderCatFilter();renderStock();populateMesSelect();
+</script>
+</body>
+</html>
