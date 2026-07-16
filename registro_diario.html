@@ -256,6 +256,71 @@ const SB_KEY = 'sb_publishable_JjPTnqCD1t-9IbyWf8xxFA_XARL7zw0';
 
 function getStore(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
 function setStore(k,v){localStorage.setItem(k,JSON.stringify(v));}
+
+// ---- SUPABASE ATENCIONES ----
+async function sbGet(path){
+  const res=await fetch(SB_URL+'/rest/v1/'+path,{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function sbPost(path,body){
+  const res=await fetch(SB_URL+'/rest/v1/'+path,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+  if(!res.ok) throw new Error(await res.text());
+}
+async function sbPatch(path,body){
+  const res=await fetch(SB_URL+'/rest/v1/'+path,{method:'PATCH',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+  if(!res.ok) throw new Error(await res.text());
+}
+async function sbDelete(path){
+  const res=await fetch(SB_URL+'/rest/v1/'+path,{method:'DELETE',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+  if(!res.ok) throw new Error(await res.text());
+}
+
+let atencionesCache=[];
+
+async function loadAtenciones(){
+  try{
+    atencionesCache=await sbGet('atenciones?order=fecha.desc');
+    // parse servicios and pagos from JSON strings
+    atencionesCache=atencionesCache.map(function(a){
+      return Object.assign({},a,{
+        servicios: a.servicios ? JSON.parse(a.servicios) : [],
+        pagos: a.pagos ? JSON.parse(a.pagos) : {}
+      });
+    });
+  }catch(e){console.log('Error cargando atenciones:',e);}
+}
+
+function getAtenciones(){return atencionesCache;}
+
+async function saveAtencionSB(atencion){
+  const row={
+    id:atencion.id,
+    fecha:atencion.fecha,
+    clienta:atencion.clienta,
+    servicios:JSON.stringify(atencion.servicios||[]),
+    horas:atencion.horas,
+    pagos:JSON.stringify(atencion.pagos||{}),
+    gc_id:atencion.gcId||null,
+    costo:atencion.costo||0,
+    costo_nota:atencion.costoNota||null,
+    notas:atencion.notas||null
+  };
+  const exists=atencionesCache.find(function(x){return x.id===atencion.id;});
+  if(exists){
+    await sbPatch('atenciones?id=eq.'+atencion.id,row);
+    const idx=atencionesCache.findIndex(function(x){return x.id===atencion.id;});
+    atencionesCache[idx]=Object.assign({},atencion);
+  } else {
+    await sbPost('atenciones',row);
+    atencionesCache.unshift(Object.assign({},atencion));
+  }
+}
+
+async function deleteAtencionSB(id){
+  await sbDelete('atenciones?id=eq.'+id);
+  atencionesCache=atencionesCache.filter(function(x){return x.id!==id;});
+}
 function fmt(n){return Math.round(n).toLocaleString('hu-HU')+' Ft';}
 function todayISO(){return new Date().toISOString().split('T')[0];}
 function mesKey(d){return d?d.slice(0,7):todayISO().slice(0,7);}
@@ -465,7 +530,7 @@ function renderAtencionCard(a) {
 // ---- HOY ----
 function renderHoy() {
   var hoy = todayISO();
-  var data = getStore('nxl_atenciones').filter(function(a){ return a.fecha===hoy; });
+  var data = getAtenciones().filter(function(a){ return a.fecha===hoy; });
   var tc = data.reduce(function(s,a){ return s+(a.servicios||[]).reduce(function(ss,sv){ return ss+sv.monto; },0); }, 0);
   var tg = tc - data.reduce(function(s,a){ return s+(a.costo||0); }, 0);
   var th = data.reduce(function(s,a){ return s+a.horas; }, 0);
@@ -477,7 +542,7 @@ function renderHoy() {
 // ---- HISTORIAL ----
 function renderHistorial() {
   var mes = document.getElementById('hist-mes').value;
-  var data = getStore('nxl_atenciones').filter(function(a){ return mesKey(a.fecha)===mes; });
+  var data = getAtenciones().filter(function(a){ return mesKey(a.fecha)===mes; });
   var el = document.getElementById('historial-list');
   if (!data.length) { el.innerHTML='<div class="empty">Sin atenciones en este mes.</div>'; return; }
   var porDia = {};
@@ -494,7 +559,7 @@ function renderHistorial() {
 // ---- RESUMEN ----
 function renderResumen() {
   var mes = document.getElementById('res-mes').value;
-  var data = getStore('nxl_atenciones').filter(function(a){ return mesKey(a.fecha)===mes; });
+  var data = getAtenciones().filter(function(a){ return mesKey(a.fecha)===mes; });
   var el = document.getElementById('resumen-content');
   if (!data.length) { el.innerHTML='<div class="empty">Sin atenciones en este mes.</div>'; return; }
   var tc=data.reduce(function(s,a){ return s+(a.servicios||[]).reduce(function(ss,sv){ return ss+sv.monto; },0); },0);
@@ -604,7 +669,7 @@ function openForm(id) {
   document.getElementById('btn-delete-at').style.display='none';
   document.getElementById('f-fecha').value=todayISO();
   if (id) {
-    var a=getStore('nxl_atenciones').find(function(x){ return x.id===id; });
+    var a=getAtenciones().find(function(x){ return x.id===id; });
     if (!a) return;
     document.getElementById('form-title').textContent=a.clienta;
     document.getElementById('f-id').value=a.id;
@@ -668,21 +733,21 @@ function saveAtencion() {
     }
   }
   var atencion={id:id,fecha:fecha,clienta:clienta,servicios:servicios,horas:horas,pagos:pagos,gcId:gcId,costo:parseFloat(document.getElementById('f-costo').value)||0,costoNota:document.getElementById('f-costo-nota').value.trim()||null,notas:document.getElementById('f-notas').value.trim()||null};
-  var all=getStore('nxl_atenciones').filter(function(x){ return x.id!==id; });
+  var all=getAtenciones().filter(function(x){ return x.id!==id; });
   all.push(atencion); setStore('nxl_atenciones',all);
   syncClienta(clienta, fecha, servicios);
   showToast('Atención guardada ✓');
   closeForm();
 }
-function deleteAtencion() {
+async function deleteAtencion() {
   var id=document.getElementById('f-id').value;
   if(!id||!confirm('¿Eliminar esta atención?')) return;
-  setStore('nxl_atenciones',getStore('nxl_atenciones').filter(function(x){ return x.id!==id; }));
+  setStore('nxl_atenciones',getAtenciones().filter(function(x){ return x.id!==id; }));
   showToast('Atención eliminada'); closeForm();
 }
 
 function getMesesDisponibles() {
-  var data=getStore('nxl_atenciones');
+  var data=getAtenciones();
   var keys=Array.from(new Set(data.map(function(a){ return mesKey(a.fecha); })));
   var cur=todayISO().slice(0,7);
   if(keys.indexOf(cur)<0) keys.push(cur);
@@ -709,9 +774,11 @@ function switchTab(t) {
 function showToast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); },2500); }
 
 loadClientas();
-populateMesSelects();
-renderHoy();
-renderGCFilter();
+loadAtenciones().then(function(){
+  populateMesSelects();
+  renderHoy();
+  renderGCFilter();
+});
 </script>
 </body>
 </html>
