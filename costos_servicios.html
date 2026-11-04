@@ -155,7 +155,11 @@
   <div class="section-sep">Productos de desinfección</div>
   <p style="font-size:12px;color:#888;margin-bottom:10px">Agregá cada producto que usás en el proceso.</p>
   <div id="d-productos-list"></div>
-  <button class="btn add" style="margin-top:8px" onclick="addProductoDesinfeccion()">+ Agregar producto</button>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+    <button class="btn add" onclick="toggleDPicker()">+ Agregar desde insumos</button>
+    <button class="btn" onclick="addProductoDesinfeccion()">+ Producto manual</button>
+  </div>
+  <div id="d-picker"></div>
 
   <div id="d-resultado" style="margin-top:20px"></div>
 </div>
@@ -573,6 +577,40 @@ function saveDesinfeccionConfig(){
   });
 }
 
+function resolveProd(p){
+  if(p.insumoId){
+    const ins=getInsumos().find(i=>i.id===p.insumoId);
+    if(ins) return {nombre:ins.nombre,precio:ins.precio||0,cantidad:ins.cantidad||0,unidad:ins.porPeso==='si'?(ins.unidad||'g'):'uds',vinculado:true};
+    return {nombre:(p.nombre||'Insumo eliminado'),precio:0,cantidad:0,unidad:p.unidad||'uds',vinculado:true,huerfano:true};
+  }
+  return {nombre:p.nombre,precio:p.precio,cantidad:p.cantidad,unidad:p.unidad,vinculado:false};
+}
+function toggleDPicker(){
+  const box=document.getElementById('d-picker');
+  if(box.innerHTML.trim()){box.innerHTML='';return;}
+  const usados=getProductosDesinfeccion().map(p=>p.insumoId).filter(Boolean);
+  const lista=getInsumos().filter(i=>!usados.includes(i.id));
+  if(!lista.length){box.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px 0">No hay insumos disponibles. Cárgalos en la base de insumos.</div>';return;}
+  const cats=CATS.filter(c=>lista.some(i=>i.categoria===c)).concat([...new Set(lista.map(i=>i.categoria))].filter(c=>!CATS.includes(c)));
+  box.innerHTML=`<div style="border:0.5px solid #ddd;border-radius:8px;background:#fff;padding:10px;margin-top:8px">
+    <input type="text" placeholder="Buscar..." oninput="dPickFilter(this.value)" style="width:100%;padding:5px 8px;font-size:13px;margin-bottom:8px">
+    <div style="max-height:320px;overflow:auto">`+cats.map(c=>`<div class="dpick-cat" style="margin-bottom:8px">
+      <div style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#888;font-weight:500;border-bottom:0.5px solid #eee;padding:4px 0">${c}</div>`+
+      lista.filter(i=>i.categoria===c).map(i=>`<label class="dpick-item" data-n="${(i.nombre||'').toLowerCase().replace(/"/g,'')}" style="display:block;font-size:13px;padding:3px 0 3px 4px"><input type="checkbox" value="${i.id}"> ${i.nombre}${i.marca?' <small style=color:#999>('+i.marca+')</small>':''}</label>`).join('')+`</div>`).join('')+`</div>
+    <div style="margin-top:8px"><button class="btn add" onclick="agregarDesdeInsumos()">Agregar seleccionados</button></div></div>`;
+}
+function dPickFilter(q){q=q.toLowerCase();document.querySelectorAll('#d-picker .dpick-item').forEach(l=>{l.style.display=l.dataset.n.includes(q)?'block':'none';});}
+function agregarDesdeInsumos(){
+  const ids=[...document.querySelectorAll('#d-picker .dpick-item input:checked')].map(c=>c.value);
+  if(!ids.length) return;
+  const prods=getProductosDesinfeccion();
+  const all=getInsumos();
+  ids.forEach((id,n)=>{const ins=all.find(i=>i.id===id);prods.push({id:(Date.now()+n).toString(),insumoId:id,nombre:ins?ins.nombre:'',usoXdia:1});});
+  saveProductosDesinfeccion(prods);
+  document.getElementById('d-picker').innerHTML='';
+  renderDesinfeccion();
+}
+
 function addProductoDesinfeccion(){
   const prods=getProductosDesinfeccion();
   prods.push({id:Date.now().toString(),nombre:'',precio:0,cantidad:1,unidad:'ml',usoXdia:1});
@@ -604,7 +642,24 @@ function renderDesinfeccion(){
   if(!prods.length){
     listEl.innerHTML=`<div style="color:#aaa;font-size:13px;padding:8px 0">No hay productos cargados aún.</div>`;
   } else {
-    listEl.innerHTML=prods.map(p=>`
+    listEl.innerHTML=prods.map(p=>{
+      if(p.insumoId){
+        const r=resolveProd(p);
+        const falta=!r.precio||!r.cantidad;
+        return `<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr 110px auto;gap:8px;align-items:end">
+          <div>
+            <div style="font-size:13px;font-weight:500">🔗 ${r.nombre}</div>
+            <div style="font-size:11px;color:${falta?'#c0392b':'#888'};margin-top:2px">${falta?'Falta precio o cantidad en Insumos':fmt(r.precio)+' por '+r.cantidad+' '+r.unidad+' · '+fmt(r.precio/r.cantidad)+'/'+r.unidad}</div>
+          </div>
+          <div class="form-group">
+            <label class="field-label">Uso/día</label>
+            <input type="number" value="${p.usoXdia||''}" placeholder="0" onchange="updateProdDesinfeccion('${p.id}','usoXdia',this.value)">
+            <span class="hint">${r.unidad}/día</span>
+          </div>
+          <div style="padding-bottom:4px"><button class="btn danger" onclick="deleteProdDesinfeccion('${p.id}')">✕</button></div>
+        </div>`;
+      }
+      return `
       <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:1fr 90px 80px 80px 80px auto;gap:8px;align-items:end">
         <div class="form-group">
           <label class="field-label">Producto</label>
@@ -632,7 +687,7 @@ function renderDesinfeccion(){
           <span class="hint">${p.unidad||'ml'}/día</span>
         </div>
         <div style="padding-bottom:4px"><button class="btn danger" onclick="deleteProdDesinfeccion('${p.id}')">✕</button></div>
-      </div>`).join('');
+      </div>`;}).join('');
   }
 
   // Calcular costos
@@ -643,7 +698,8 @@ function renderDesinfeccion(){
   const tiempoPorClienta=tiempoMin/clientasDia;
   const costoTiempo=valorHora>0?(tiempoPorClienta/60)*valorHora:0;
 
-  const costoProdDia=prods.reduce((s,p)=>{
+  const costoProdDia=prods.reduce((s,p0)=>{
+    const p=Object.assign({},p0,resolveProd(p0));
     if(!p.precio||!p.cantidad||!p.usoXdia) return s;
     const precioPorUnidad=p.precio/p.cantidad;
     return s+(precioPorUnidad*p.usoXdia);
@@ -684,7 +740,7 @@ function renderDesinfeccion(){
 
     ${prods.length>0?`<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px">
       <div style="font-size:13px;font-weight:500;margin-bottom:10px">Desglose por producto</div>
-      ${prods.filter(p=>p.precio&&p.cantidad&&p.usoXdia).map(p=>{
+      ${prods.map(p0=>Object.assign({},p0,resolveProd(p0))).filter(p=>p.precio&&p.cantidad&&p.usoXdia).map(p=>{
         const cpu=p.precio/p.cantidad;
         const costoDia=cpu*p.usoXdia;
         const costoClienta=clientasDia>0?costoDia/clientasDia:0;
