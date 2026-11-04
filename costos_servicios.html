@@ -117,7 +117,7 @@
     <div class="form-grid">
       <div class="form-group">
         <label class="field-label">Clientas promedio por mes</label>
-        <input type="number" id="clientas-mes" placeholder="Ej: 60" oninput="saveConfig();renderGastos();renderAnalisis()">
+        <input type="number" id="clientas-mes" placeholder="Ej: 60" onchange="saveConfig();renderGastos();renderAnalisis()">
         <span class="hint">Para calcular el costo fijo por clienta</span>
       </div>
     </div>
@@ -279,7 +279,9 @@ function renderServiciosList(){
             ${insumos.filter(ins=>!svAsig.find(a=>a.insumoId===ins.id)).map(ins=>`<option value="${ins.id}">[${ins.categoria}] ${ins.nombre}</option>`).join('')}
           </select>
           <button class="btn add" onclick="agregarInsumoASV('${sv.id}')">Agregar</button>
+          <button class="btn" onclick="togglePicker('${sv.id}')">Elegir varios…</button>
         </div>
+        <div id="pick-${sv.id}"></div>
         ${costoTotal>0?`<div style="margin-top:12px;padding-top:10px;border-top:0.5px solid #f0f0ee;display:flex;justify-content:space-between;font-size:13px"><span style="color:#666">Costo total de insumos</span><span style="font-weight:500">${fmt(costoTotal)}</span></div>`:''}
       </div>
     </div>`;
@@ -339,6 +341,43 @@ function agregarInsumoASV(svId){
   showToast('Insumo agregado ✓');
 }
 
+// ---- Selector múltiple de insumos ----
+function togglePicker(svId){
+  const box=document.getElementById('pick-'+svId);
+  if(box.innerHTML.trim()){box.innerHTML='';return;}
+  const asig=(getAsignaciones()[svId]||[]).map(a=>a.insumoId);
+  const lista=getInsumos().filter(i=>!asig.includes(i.id));
+  if(!lista.length){box.innerHTML='<div style="color:#aaa;font-size:13px;padding:8px 0">No quedan insumos por agregar.</div>';return;}
+  const cats=CATS.filter(c=>lista.some(i=>i.categoria===c)).concat([...new Set(lista.map(i=>i.categoria))].filter(c=>!CATS.includes(c)));
+  box.innerHTML=`<div style="border:0.5px solid #ddd;border-radius:8px;background:#fff;padding:10px;margin-top:8px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <label style="font-size:13px;font-weight:500"><input type="checkbox" onchange="pickAll('${svId}',this.checked)"> Seleccionar todo</label>
+      <input type="text" placeholder="Buscar..." oninput="pickFilter('${svId}',this.value)" style="flex:1;min-width:120px;padding:5px 8px;font-size:13px">
+    </div>
+    <div style="max-height:320px;overflow:auto">`+cats.map(c=>{
+      const items=lista.filter(i=>i.categoria===c);
+      return `<div class="pick-cat" style="margin-bottom:8px">
+        <label style="font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#888;font-weight:500;display:block;border-bottom:0.5px solid #eee;padding:4px 0"><input type="checkbox" onchange="pickCat('${svId}',this)"> ${c} (${items.length})</label>`+
+        items.map(i=>`<label class="pick-item" data-n="${(i.nombre||'').toLowerCase().replace(/"/g,'')}" style="display:block;font-size:13px;padding:3px 0 3px 18px"><input type="checkbox" value="${i.id}" onchange="pickCount('${svId}')"> ${i.nombre}${i.marca?' <small style=color:#999>('+i.marca+')</small>':''}</label>`).join('')+`</div>`;
+    }).join('')+`</div>
+    <div style="margin-top:8px"><button class="btn add" onclick="agregarSeleccionados('${svId}')">Agregar seleccionados (<span id="pick-n-${svId}">0</span>)</button></div></div>`;
+}
+function pickAll(svId,on){document.querySelectorAll(`#pick-${svId} .pick-item:not([style*="display: none"]) input`).forEach(c=>c.checked=on);document.querySelectorAll(`#pick-${svId} .pick-cat > label input`).forEach(c=>c.checked=on);pickCount(svId);}
+function pickCat(svId,el){el.closest('.pick-cat').querySelectorAll('.pick-item input').forEach(c=>{if(c.closest('.pick-item').style.display!=='none')c.checked=el.checked;});pickCount(svId);}
+function pickFilter(svId,q){q=q.toLowerCase();document.querySelectorAll(`#pick-${svId} .pick-item`).forEach(l=>{l.style.display=l.dataset.n.includes(q)?'block':'none';});}
+function pickCount(svId){document.getElementById('pick-n-'+svId).textContent=document.querySelectorAll(`#pick-${svId} .pick-item input:checked`).length;}
+function agregarSeleccionados(svId){
+  const ids=[...document.querySelectorAll(`#pick-${svId} .pick-item input:checked`)].map(c=>c.value);
+  if(!ids.length)return;
+  const asig=getAsignaciones();
+  if(!asig[svId])asig[svId]=[];
+  ids.forEach(id=>{if(!asig[svId].find(a=>a.insumoId===id))asig[svId].push({insumoId:id,cantidad:1});});
+  setObj('nxl_asignaciones',asig);
+  renderServiciosList();
+  setTimeout(()=>{const b=document.getElementById('body-'+svId),a=document.getElementById('arr-'+svId);if(b){b.classList.add('open');a.textContent='⌄';}},50);
+  showToast(ids.length+' insumos agregados ✓');
+}
+
 function updateCantidad(svId,idx,val){
   const asig=getAsignaciones();
   if(!asig[svId]) return;
@@ -388,7 +427,7 @@ function renderGastos(){
       </div>
       <div class="form-group">
         <label class="field-label">Monto mensual (Ft)</label>
-        <input type="number" value="${g.monto||''}" placeholder="0" oninput="updateGasto(${idx},'monto',parseFloat(this.value)||0)">
+        <input type="number" inputmode="decimal" value="${g.monto||''}" placeholder="0" onchange="updateGasto(${idx},'monto',parseFloat(this.value)||0)">
       </div>
       <div style="padding-bottom:4px">
         <button class="btn danger" onclick="deleteGasto(${idx})">✕</button>
@@ -431,7 +470,7 @@ function renderPreciosGrid(){
         ${s.precio!==s.precioBase?`<span style="color:#2a5cc5;font-size:10px">editado (orig: ${fmt(s.precioBase)})</span>`:''}
       </label>
       <input type="number" value="${s.precio}" min="0" step="100"
-        oninput="updatePrecio('${s.id}',this.value)"
+        onchange="updatePrecio('${s.id}',this.value)"
         style="background:${s.precio!==s.precioBase?'#f0f5ff':'#fff'}">
     </div>`).join('');
 }
@@ -573,11 +612,11 @@ function renderDesinfeccion(){
         </div>
         <div class="form-group">
           <label class="field-label">Precio (Ft)</label>
-          <input type="number" value="${p.precio||''}" placeholder="0" oninput="updateProdDesinfeccion('${p.id}','precio',this.value)">
+          <input type="number" value="${p.precio||''}" placeholder="0" onchange="updateProdDesinfeccion('${p.id}','precio',this.value)">
         </div>
         <div class="form-group">
           <label class="field-label">Cant. envase</label>
-          <input type="number" value="${p.cantidad||''}" placeholder="0" oninput="updateProdDesinfeccion('${p.id}','cantidad',this.value)">
+          <input type="number" value="${p.cantidad||''}" placeholder="0" onchange="updateProdDesinfeccion('${p.id}','cantidad',this.value)">
         </div>
         <div class="form-group">
           <label class="field-label">Unidad</label>
@@ -589,7 +628,7 @@ function renderDesinfeccion(){
         </div>
         <div class="form-group">
           <label class="field-label">Uso/día</label>
-          <input type="number" value="${p.usoXdia||''}" placeholder="0" oninput="updateProdDesinfeccion('${p.id}','usoXdia',this.value)">
+          <input type="number" value="${p.usoXdia||''}" placeholder="0" onchange="updateProdDesinfeccion('${p.id}','usoXdia',this.value)">
           <span class="hint">${p.unidad||'ml'}/día</span>
         </div>
         <div style="padding-bottom:4px"><button class="btn danger" onclick="deleteProdDesinfeccion('${p.id}')">✕</button></div>
