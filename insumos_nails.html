@@ -119,6 +119,7 @@
           <option value="">Seleccionar...</option>
           <option value="Desechables">Desechables</option>
           <option value="Cortesías">Cortesías</option>
+          <option value="Decoración">Decoración</option>
           <option value="Básicos en gel">Básicos en gel</option>
           <option value="Nail art geles">Nail art geles</option>
           <option value="Equipos electrónicos">Equipos electrónicos</option>
@@ -206,7 +207,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const CATS = ['Desechables','Cortesías','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
+const CATS = ['Desechables','Cortesías','Decoración','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
 const SERVICIOS = ['Manicura','Manicura esmalte tradicional','Manicura semipermanente','Manicura estructurada semi','Pedicura','Pedicura esmalte tradicional','Pedicura semipermanente','Gel X largo S','Gel X largo M','Gel X largo L','Gel X largo XL'];
 
 let activeCat = 'Todos';
@@ -319,7 +320,7 @@ function updateMethodForm() {
   const unidadGrupo = document.getElementById('unidad-grupo');
   let html = '';
 
-  if (['Desechables','Cortesías'].includes(cat)) {
+  if (['Desechables','Cortesías','Decoración'].includes(cat)) {
     html = `<div class="method-box"><span class="field-label">Método: costo por unidad</span><p style="font-size:12px;color:#888">Se consume 1 unidad por clienta. El costo es: precio ÷ cantidad en envase.</p></div>`;
     porPeso.value = 'no';
     unidadGrupo.style.display = 'none';
@@ -384,7 +385,7 @@ function calcCosto() {
   let costo = null;
   let detalle = '';
 
-  if (['Desechables','Cortesías'].includes(cat) && precio && cantidad) {
+  if (['Desechables','Cortesías','Decoración'].includes(cat) && precio && cantidad) {
     costo = precio / cantidad;
     detalle = `${fmt(precio)} ÷ ${cantidad} uds = ${fmt(costo)} por clienta`;
   } else if (cat === 'Equipos electrónicos') {

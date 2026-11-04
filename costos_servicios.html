@@ -199,7 +199,7 @@ function getSERVICIOS(){
 // Keep SERVICIOS as a getter for backward compat
 Object.defineProperty(window,'SERVICIOS',{get:getSERVICIOS});
 
-const CATS = ['Desechables','Cortesías','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
+const CATS = ['Desechables','Cortesías','Decoración','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
 const GASTOS_CATS = ['Alquiler del local','Productos (esmaltes, geles)','Transporte','Publicidad y redes','Impuestos','Contadora','Apps e internet','Otro'];
 
 function getStore(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
@@ -232,7 +232,7 @@ function costoUso(ins, cantidad){
     // precio por g/ml * cantidad usada
     return costoPorUnidad(ins)*cantidad;
   }
-  if(['Desechables','Cortesías'].includes(ins.categoria)){
+  if(['Desechables','Cortesías','Decoración'].includes(ins.categoria)){
     return costoPorUnidad(ins)*cantidad;
   }
   // For others, costoPorClienta is already calculated
@@ -293,7 +293,7 @@ function renderInsumoRows(svId, svAsig, insumos){
     if(!ins) return '';
     const cpu=costoPorUnidad(ins);
     const subtotal=costoUso(ins,a.cantidad);
-    const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'ud':'uso';
+    const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías','Decoración'].includes(ins.categoria)?'ud':'uso';
     return `<div class="insumo-asignado">
       <div style="flex:1;min-width:0">
         <div class="insumo-nombre">${ins.nombre}</div>
@@ -326,7 +326,7 @@ function agregarInsumoASV(svId){
   const asig=getAsignaciones();
   if(!asig[svId]) asig[svId]=[];
   const ins=getInsumos().find(i=>i.id===insumoId);
-  const defaultQty=['Desechables','Cortesías'].includes(ins?.categoria)?1:1;
+  const defaultQty=['Desechables','Cortesías','Decoración'].includes(ins?.categoria)?1:1;
   asig[svId].push({insumoId,cantidad:defaultQty});
   setObj('nxl_asignaciones',asig);
   renderServiciosList();

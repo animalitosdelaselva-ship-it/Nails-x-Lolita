@@ -245,7 +245,7 @@
 
 <script>
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const CATS = ['Desechables','Cortesías','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
+const CATS = ['Desechables','Cortesías','Decoración','Básicos en gel','Nail art geles','Equipos electrónicos','Útiles de aseo','Esenciales','Nail art herramientas','Herramientas'];
 
 function getStore(k){try{return JSON.parse(localStorage.getItem(k))||[];}catch(e){return[];}}
 function setStore(k,v){localStorage.setItem(k,JSON.stringify(v));}
@@ -317,7 +317,7 @@ function renderStock(){
     const pct=min>0?Math.min(100,Math.round(qty/min*100)):qty>0?100:0;
     const barColor=esCritico?'#c0392b':esAlerta?'#e09c2a':'#3aab6d';
     const qtyClass=esCritico?'crit':esAlerta?'warn':'ok';
-    const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'uds':'uds';
+    const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías','Decoración'].includes(ins.categoria)?'uds':'uds';
 
     return`<div class="stock-card ${esCritico?'critico':esAlerta?'alerta':''}">
       <div class="stock-header">
@@ -362,7 +362,7 @@ function onInsumoSelect(){
   const infoEl=document.getElementById('e-insumo-info');
   const detailEl=document.getElementById('e-insumo-detail');
   if(!ins){infoEl.style.display='none';return;}
-  const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'uds':'uds';
+  const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías','Decoración'].includes(ins.categoria)?'uds':'uds';
   document.getElementById('e-unidad-hint').textContent=`En ${unidad}`;
   document.getElementById('e-tienda').value=ins.tienda||'';
   if(ins.precio) document.getElementById('e-precio-unit').value=ins.precio;
@@ -460,7 +460,7 @@ function openAjuste(insumoId){
   document.getElementById('aj-actual').value=Math.round(getStockActual(insumoId)*100)/100;
   document.getElementById('aj-nuevo').value='';
   document.getElementById('aj-motivo').value='';
-  const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías'].includes(ins.categoria)?'uds':'uds';
+  const unidad=ins.porPeso==='si'?(ins.unidad||'g'):['Desechables','Cortesías','Decoración'].includes(ins.categoria)?'uds':'uds';
   document.getElementById('aj-unidad').textContent=unidad;
   document.getElementById('form-ajuste').classList.add('open');
   window.scrollTo(0,0);
