@@ -771,6 +771,18 @@ function renderAnalisis(){
     return{...sv,costoInsumos,costoTiempo,costoEquipos,min,costoTotal,margen,pct};
   });
 
+  const metaHtml=valorHora>0?`
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;overflow-x:auto;margin-bottom:10px"><div style="min-width:560px">
+      <div style="padding:12px 16px 4px"><div style="font-size:13px;font-weight:500">¿Llegas a tu valor hora de ${fmt(valorHora)}?</div>
+      <div style="font-size:11px;color:#999;margin:2px 0 8px">Ganas por hora = (precio − todos los costos, sin contar tu tiempo) ÷ horas del servicio. Precio mínimo = el precio que te paga justo tu valor hora.</div></div>
+      <div style="padding:6px 16px;border-bottom:0.5px solid #f0f0ee;display:grid;grid-template-columns:1fr 80px 90px 90px 90px;gap:8px;font-size:11px;color:#999;font-weight:500"><span>SERVICIO</span><span style="text-align:right">PRECIO</span><span style="text-align:right">PRECIO MÍN.</span><span style="text-align:right">DIFERENCIA</span><span style="text-align:right">GANAS/HORA</span></div>
+      ${rows.map(r=>{
+        if(!r.min) return `<div style="padding:8px 16px;border-bottom:0.5px solid #f5f5f3;font-size:13px;color:#aaa">${r.nombre} · falta la duración</div>`;
+        const gh=(r.precio-(r.costoTotal-r.costoTiempo))/(r.min/60);
+        const dif=r.precio-r.costoTotal;
+        const ok=gh>=valorHora;
+        return `<div style="padding:8px 16px;border-bottom:0.5px solid #f5f5f3;display:grid;grid-template-columns:1fr 80px 90px 90px 90px;gap:8px;align-items:center;font-size:13px"><span style="font-weight:500">${r.nombre}</span><span style="text-align:right">${fmt(r.precio)}</span><span style="text-align:right">${fmt(r.costoTotal)}</span><span style="text-align:right;color:${dif>=0?'#2f8f56':'#c0392b'}">${dif>=0?'+':''}${fmt(dif)}</span><span style="text-align:right"><span class="pill ${ok?'green':gh>=valorHora*0.7?'warn':'red'}">${fmt(gh)}</span></span></div>`;}).join('')}
+    </div></div>`:'';
   const tiers=getTiers().filter(t=>t.precio>0||t.min>0);
   const tierExtra=tiers.map(t=>({...t,costo:calcCostoServicio(t.id)+(t.min/60)*(valorHora+tasaEq)}));
   const semiRows=rows.filter(r=>SEMI_IDS.includes(r.id));
@@ -812,6 +824,7 @@ function renderAnalisis(){
           <span style="text-align:right"><span class="pill ${r.pct>=50?'green':r.pct>=30?'warn':'red'}">${r.costoTotal>0?r.pct+'%':'—'}</span></span>
         </div>`).join('')}
     </div></div>
+    ${metaHtml}
     ${matriz}
     ${valorHora>0&&!Object.keys(duraciones).length?'<div style="font-size:12px;color:#c0392b;margin-bottom:10px">Completa la duración de cada servicio para incluir tu tiempo en el costo.</div>':''}
 
