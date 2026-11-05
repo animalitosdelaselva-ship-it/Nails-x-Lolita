@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copia de seguridad</title>
+<style>
+*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#f5f5f3;color:#1a1a18;padding:20px;max-width:640px;margin:auto}
+h1{font-size:20px;font-weight:500}p{font-size:13px;color:#666;line-height:1.5}
+.box{background:#fff;border:.5px solid #e0e0e0;border-radius:10px;padding:16px;margin:14px 0}
+button{font:inherit;padding:9px 18px;border-radius:8px;border:.5px solid #888;background:#1a1a18;color:#fff;cursor:pointer}
+table{width:100%;font-size:13px;border-collapse:collapse;margin-top:8px}td{padding:4px 0;border-bottom:.5px solid #eee}td:last-child{text-align:right;color:#888}
+#msg{font-size:13px;margin-top:10px;color:#2a7a3b}
+</style></head><body>
+<a href="index.html" style="font-size:13px;color:#666">← Menú</a>
+<h1>Copia de seguridad</h1>
+<p>Tus insumos, costos, inventario y calendario viven en este navegador. Descarga una copia cada cierto tiempo y guárdala fuera del navegador (Drive, correo). Si algún día se borran los datos, la restauras desde aquí.</p>
+<div class="box"><b style="font-size:14px">Datos guardados ahora</b><table id="tabla"></table></div>
+<div class="box"><button onclick="exportar()">⬇ Descargar copia</button><div id="msg"></div></div>
+<div class="box"><b style="font-size:14px">Restaurar</b>
+<p>Elige un archivo de copia. Antes de restaurar se guarda una copia automática de lo actual en el navegador.</p>
+<input type="file" accept=".json" id="file" onchange="restaurar(this.files[0])"></div>
+<script>
+const pref=k=>k.startsWith('nxl_')&&!k.includes('_backup_');
+function claves(){const r=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(pref(k))r.push(k);}return r.sort();}
+function pinta(){const t=document.getElementById('tabla');t.innerHTML=claves().map(k=>{let n='';try{const v=JSON.parse(localStorage.getItem(k));n=Array.isArray(v)?v.length+' registros':'configuración';}catch(e){n='dato'}return `<tr><td>${k}</td><td>${n}</td></tr>`}).join('')||'<tr><td>No hay datos guardados en este navegador.</td><td></td></tr>';}
+function exportar(){
+  const o={version:1,fecha:new Date().toISOString(),datos:{}};
+  claves().forEach(k=>o.datos[k]=localStorage.getItem(k));
+  const blob=new Blob([JSON.stringify(o)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='respaldo_nails_x_lolita_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  document.getElementById('msg').textContent='✓ Copia descargada ('+claves().length+' conjuntos de datos).';
+}
+function restaurar(f){
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const o=JSON.parse(r.result);
+      if(!o.datos)throw new Error('Archivo no válido');
+      if(!confirm('Esto reemplaza los datos actuales por los del archivo. ¿Continuar?'))return;
+      const prev={};claves().forEach(k=>prev[k]=localStorage.getItem(k));
+      localStorage.setItem('nxl_respaldo_backup_'+Date.now(),JSON.stringify(prev));
+      Object.entries(o.datos).forEach(([k,v])=>{if(pref(k))localStorage.setItem(k,v);});
+      pinta();document.getElementById('msg').textContent='✓ Datos restaurados.';
+    }catch(e){document.getElementById('msg').textContent='Error: '+e.message;}
+  };
+  r.readAsText(f);
+}
+pinta();
+</script></body></html>
