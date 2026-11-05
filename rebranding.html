@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rebranding — Nails x Lolita</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .nav a { font-size: 13px; color: #666; text-decoration: none; }
+  .nav-title { font-size: 16px; font-weight: 500; }
+  .nav-sub { font-size: 11px; color: #999; }
+  .total { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; min-width: 150px; }
+  .bar { flex: 1; height: 6px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .bar > div { height: 100%; background: #3aab6d; width: 0; transition: width .3s; }
+  .layout { display: grid; grid-template-columns: 230px 1fr; gap: 20px; max-width: 1050px; margin: 0 auto; padding: 20px; }
+  .side { position: sticky; top: 70px; align-self: start; display: flex; flex-direction: column; gap: 4px; }
+  .step { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; border: 0.5px solid transparent; background: transparent; font: inherit; font-size: 13px; color: #555; text-align: left; cursor: pointer; }
+  .step:hover { background: #fff; }
+  .step.active { background: #fff; border-color: #ddd; color: #1a1a18; font-weight: 500; }
+  .step .pct { margin-left: auto; font-size: 11px; color: #999; }
+  .step .pct.done { color: #2f8f56; }
+  .card { background: #fff; border: 0.5px solid #e0e0e0; border-radius: 12px; padding: 20px; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .why { font-size: 13px; color: #777; line-height: 1.5; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 0.5px solid #eee; }
+  .field { margin-bottom: 18px; }
+  .field > label.l { display: block; font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .hint { font-size: 12px; color: #999; line-height: 1.4; margin-bottom: 6px; }
+  input[type=text], input[type=number], input[type=date], select, textarea { font: inherit; font-size: 13px; color: #1a1a18; background: #fff; border: 0.5px solid #ccc; border-radius: 8px; padding: 8px 10px; width: 100%; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #888; }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.45; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { padding: 5px 12px; border-radius: 20px; border: 0.5px solid #ddd; background: #f6f6f4; font-size: 12px; color: #555; cursor: pointer; user-select: none; }
+  .chip.on { background: #e8f0fe; border-color: #aac4f5; color: #2a5cc5; }
+  .btn { font: inherit; font-size: 13px; padding: 8px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: #fff; color: #1a1a18; cursor: pointer; }
+  .btn.dark { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .btn.sm { padding: 4px 10px; font-size: 12px; }
+  .btn.x { color: #c0392b; border-color: #e8c4c0; padding: 6px 10px; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .grid-r { display: grid; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .colhead { font-size: 11px; color: #999; }
+  .slider { display: grid; grid-template-columns: 110px 1fr 110px; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 12px; color: #555; }
+  .slider span:last-child { text-align: right; }
+  .slider.untouched input { opacity: .45; }
+  input[type=range] { width: 100%; accent-color: #1a1a18; }
+  .swatch { width: 38px; height: 38px; border-radius: 8px; border: 0.5px solid #ccc; padding: 0; background: none; cursor: pointer; }
+  .nav-btns { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 0.5px solid #eee; }
+  .checks label { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; padding: 4px 0; }
+  .tp { display: grid; grid-template-columns: 1fr 120px 1.2fr; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 0.5px solid #f2f2f0; font-size: 13px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 20px; }
+  .pill.g { background: #e6f4ee; color: #1a7a4a; } .pill.r { background: #fdecec; color: #c0392b; } .pill.a { background: #fef9e7; color: #7a5a00; }
+  pre.brief { white-space: pre-wrap; font: inherit; font-size: 13px; line-height: 1.55; background: #fafaf8; border: 0.5px solid #e8e8e4; border-radius: 10px; padding: 16px; max-height: 520px; overflow: auto; }
+  .saved { font-size: 11px; color: #2f8f56; opacity: 0; transition: opacity .3s; }
+  .saved.show { opacity: 1; }
+  .scroll { overflow-x: auto; }
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; padding: 12px; }
+    .side { position: static; flex-direction: row; overflow-x: auto; padding-bottom: 6px; }
+    .step { white-space: nowrap; }
+    .slider { grid-template-columns: 80px 1fr 80px; }
+    .total { min-width: 100px; }
+  }
+  @media print {
+    .nav, .side, .nav-btns, .noprint { display: none !important; }
+    .layout { display: block; padding: 0; }
+    .card { border: none; padding: 0; }
+    pre.brief { max-height: none; overflow: visible; border: none; background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div style="display:flex;align-items:center;gap:14px">
+    <a href="index.html">← Menú</a>
+    <div><div class="nav-title">Rebranding</div><div class="nav-sub">Ordena tus ideas hasta tener tu marca completa</div></div>
+  </div>
+  <div class="total"><span id="total-pct">0%</span><div class="bar"><div id="total-bar"></div></div><span class="saved" id="saved">Guardado ✓</span></div>
+</div>
+
+<div class="layout">
+  <div class="side" id="side"></div>
+  <div class="card" id="main"></div>
+</div>
+
+<script>
+// ============ DEFINICIÓN DE SECCIONES ============
+const ADJ=['Elegante','Delicada','Atrevida','Divertida','Minimalista','Cálida','Artística','Lujosa','Natural','Moderna','Femenina','Profesional','Juguetona','Sofisticada','Auténtica','Cercana','Exclusiva','Creativa','Limpia','Glamurosa'];
+const PERS=[['Clásica','Moderna'],['Sobria','Divertida'],['Minimalista','Recargada'],['Delicada','Atrevida'],['Accesible','Exclusiva'],['Natural','Glamurosa']];
+const TOUCH=['Foto y nombre de perfil de Instagram','Bio y enlace de Instagram','Portadas de historias destacadas','Plantillas de publicaciones y reels','TikTok','Facebook','Linktree (o similar)','Perfil de Fresha (nombre, foto, descripción)','Google Business / Google Maps','Perfil de WhatsApp Business','Letrero o cartel del estudio / puerta','Tarjetas de presentación','Menú o lista de precios impresa','Tarjetas de cuidado post-servicio','Gift cards','Bolsas, cajas o packaging','Tarjeta de agradecimiento','Decoración y ambiente del estudio','Delantal o uniforme','Firma de correo y mensajes automáticos','Sitio web','Etiquetas o stickers','Recibos y facturas','Plantillas de Canva'];
+const NAME_CHECKS=['Instagram: usuario disponible','TikTok: usuario disponible','Dominio disponible (.com, .hu)','Facebook y Google Maps: nombre libre','Búsqueda de marca registrada (EUIPO y oficina húngara de propiedad intelectual)','Búsqueda en Google: no se confunde con otro negocio de uñas','Significado revisado en húngaro, inglés y español','Se pronuncia y escribe fácil en los 3 idiomas','Nombre de actividad/empresa: consultar con tu contable cómo se cambia','Cambio de nombre en Fresha, bancos y facturas planificado'];
+const LOGO_DELIV=['Logo principal','Logo secundario (horizontal o vertical)','Ícono para foto de perfil redonda','Versión de un solo color','Versión blanca / negra para fondos','Favicon (para web)','Marca de agua para fotos','Archivos entregados en SVG, PNG transparente y PDF'];
+const BUDGET_DEF=['Estrategia y naming','Logo e identidad','Fotos de marca','Impresión (tarjetas, menús, packaging)','Letrero / decoración del estudio','Dominio y web','Registro de marca','Publicidad de lanzamiento'];
+const PHASES=['Estrategia y esencia','Nombre','Concepto e idea','Logo','Colores y tipografías','Aplicaciones (redes, impresos, estudio)','Lanzamiento'];
+const HIGHL=['Servicios','Precios','Reseñas','Antes y después','Cuidado de uñas','Estudio','Preguntas frecuentes','Cursos y certificados'];
+
+const SECTIONS=[
+ {id:'inicio',icon:'🧭',title:'Punto de partida',why:'Antes de diseñar nada, aclara por qué cambias y qué no quieres perder. Un rebranding sin motivo claro termina siendo un logo bonito y nada más.',fields:[
+  {id:'motivo',t:'textarea',l:'¿Por qué quieres hacer un rebranding?',h:'Ej: mi nivel y mis precios ya no coinciden con mi imagen, quiero atraer otro tipo de clienta, el nombre no me representa…'},
+  {id:'cambia',t:'chips',l:'¿Qué quieres cambiar?',opts:['Nombre','Logo','Colores','Tipografías','Tono de comunicación','Decoración del estudio','Menú de servicios','Estilo de fotos','Packaging','Redes sociales','Sitio web']},
+  {id:'queda',t:'textarea',l:'¿Qué de la marca actual quieres conservar?',h:'Ej: mis clientas, la reputación, el usuario de Instagram, 6 años de trabajo, algún color o elemento…'},
+  {id:'marcaActual',t:'text',l:'Nombre actual',def:'Nails x Lolita'},
+  {id:'igActual',t:'text',l:'Instagram actual',def:'@_nailsxlolita_'},
+  {id:'canales',t:'textarea',l:'Otros canales donde existe tu marca',def:'Linktree: linktr.ee/nailsxlolita\nFresha, TikTok, Facebook',h:'Todo lo que habrá que actualizar al cambiar.'},
+  {id:'noGusta',t:'textarea',l:'¿Qué no te gusta de tu imagen actual?',h:'Sé honesta y concreta. Esto es tan útil como saber lo que sí quieres.'},
+  {id:'exito',t:'textarea',l:'¿Cómo sabrás que funcionó? (3 resultados medibles)',h:'Ej: más reservas de clientas nuevas, cobrar mis nuevos precios sin dudar, que me reconozcan en redes.'},
+  {id:'riesgos',t:'textarea',l:'Riesgos o miedos',h:'Ej: confundir a las clientas que ya me conocen, perder alcance en Instagram.'},
+  {id:'fechaMeta',t:'date',l:'Fecha objetivo de lanzamiento'}]},
+ {id:'esencia',icon:'💎',title:'Esencia de marca',why:'Aquí está la base de todo: para qué existes, qué prometes y cómo eres. Las decisiones de nombre, color y estilo salen de esta sección.',fields:[
+  {id:'proposito',t:'textarea',l:'Propósito: ¿para qué existe tu estudio más allá de hacer uñas?',h:'Ej: que cada clienta se sienta cuidada y salga con confianza.'},
+  {id:'mision',t:'textarea',l:'Misión: qué haces, para quién y cómo'},
+  {id:'vision',t:'textarea',l:'Visión: ¿dónde quieres estar en 3 a 5 años?'},
+  {id:'valores',t:'list',l:'Valores (3 a 5)',ph:'Ej: higiene, honestidad, creatividad…'},
+  {id:'promesa',t:'textarea',l:'Tu promesa a cada clienta',h:'Una frase corta que puedas cumplir siempre.'},
+  {id:'diferencial',t:'textarea',l:'¿Qué te hace diferente de otros estudios de Budapest?',h:'Ej: 6 años de experiencia, formación constante, atención individual, protocolo de desinfección riguroso, idiomas que hablas…'},
+  {id:'historia',t:'textarea',l:'Tu historia en pocas líneas',h:'Cómo empezaste, qué te mueve, por qué en Budapest.'},
+  {id:'pers',t:'sliders',l:'Personalidad de la marca',h:'Mueve cada barra hacia donde se parezca más tu marca.'},
+  {id:'adj',t:'chips',l:'5 adjetivos que describen tu marca',max:5,opts:ADJ},
+  {id:'posic',t:'textarea',l:'Frase de posicionamiento',h:'Plantilla: Para [clienta ideal] que [necesidad], [marca] es [tipo de estudio] que [beneficio principal] porque [razón para creerlo].'}]},
+ {id:'clienta',icon:'👤',title:'Clienta ideal',why:'Una marca que le habla a todas no le habla a nadie. Define a quién quieres atraer, aunque hoy tengas clientas distintas.',fields:[
+  {id:'quien',t:'textarea',l:'Describe a tu clienta ideal',h:'Cómo es, a qué se dedica, cómo vive.'},
+  {id:'edad',t:'text',l:'Rango de edad'},
+  {id:'zona',t:'text',l:'Dónde vive o trabaja, y de dónde es',h:'Ej: Angyalföld, centro, expatriadas, húngaras…'},
+  {id:'idiomas',t:'chips',l:'Idiomas en los que la atiendes',opts:['Español','Inglés','Húngaro','Otro']},
+  {id:'valora',t:'textarea',l:'¿Qué valora más?',h:'Calidad, higiene, diseño, puntualidad, trato, precio…'},
+  {id:'presu',t:'select',l:'Nivel de gasto',opts:['Económico','Medio','Medio-alto','Premium']},
+  {id:'dolores',t:'textarea',l:'¿Qué problemas tiene con otros estudios?',h:'Ej: poca higiene, retrasos, uñas que se despegan, no la escuchan.'},
+  {id:'donde',t:'chips',l:'¿Dónde te encuentra?',opts:['Instagram','TikTok','Google Maps','Fresha','Recomendación','Facebook','Otro']},
+  {id:'actuales',t:'textarea',l:'¿Tus mejores clientas de hoy se parecen a la ideal?',h:'Si no, ¿qué cambiaría?'}]},
+ {id:'comp',icon:'🔍',title:'Competencia y referencias',why:'Para diferenciarte necesitas saber qué hacen los demás. Y reunir referencias visuales hace que tus ideas se vuelvan algo concreto.',fields:[
+  {id:'competidores',t:'rows',l:'Estudios con los que te comparan o que admiras',h:'Nombre, qué hacen bien y qué evitarías. 3 a 5.',cols:[['n','Estudio','text'],['b','Qué hacen bien','text'],['e','Qué evitarías','text']],addLabel:'+ Añadir estudio'},
+  {id:'referentes',t:'textarea',l:'Marcas o cuentas que admiras (de uñas o de cualquier rubro) y por qué'},
+  {id:'moodboard',t:'textarea',l:'Enlaces del moodboard',h:'Pinterest, Instagram, Canva… Pega aquí los enlaces.'},
+  {id:'evitar',t:'textarea',l:'Lo que NO quieres que parezca tu marca'}]},
+ {id:'concepto',icon:'💡',title:'Concepto e idea',why:'El concepto es la idea central que une todo: nombre, colores, fotos y tono. Si lo tienes claro, el resto se decide casi solo.',fields:[
+  {id:'idea',t:'textarea',l:'La gran idea en una frase',h:'Ej: "un refugio pequeño y artístico donde cada diseño se hace a medida".'},
+  {id:'palabras',t:'list',l:'3 palabras clave del concepto',ph:'Ej: arte, calma, detalle'},
+  {id:'universo',t:'textarea',l:'Universo visual',h:'¿Naturaleza, arte, moda, vintage, minimalismo, fantasía…? Cuenta qué mundo imaginas.'},
+  {id:'emociones',t:'textarea',l:'¿Qué debe sentir una clienta al ver tu perfil, entrar al estudio y recibir un mensaje tuyo?'},
+  {id:'tono',t:'chips',l:'Tono de comunicación',opts:['Cercano','Elegante','Divertido','Profesional','Cálido','Directo','Poético','Irónico','Educativo']},
+  {id:'tonoEj',t:'textarea',l:'Escribe cómo saludarías por mensaje a una clienta con tu nuevo tono'},
+  {id:'eslogan',t:'list',l:'Posibles frases o eslóganes',ph:'Escribe una opción'},
+  {id:'origen',t:'textarea',l:'Origen y significado de tu nombre actual',h:'¿Qué parte te gustaría conservar en la nueva marca?'}]},
+ {id:'nombre',icon:'🏷️',title:'Nombre',why:'El nombre es la decisión más difícil de cambiar después. Escribe varias opciones y compáralas con los mismos criterios.',fields:[
+  {id:'decision',t:'select',l:'¿Qué harás con el nombre?',opts:['Aún no lo sé','Mantenerlo','Evolucionarlo (ajustarlo un poco)','Cambiarlo por completo']},
+  {id:'candidatos',t:'names',l:'Candidatos',h:'Marca lo que se cumple y da una nota de 1 a 5 a cuánto te gusta. El puntaje suma ambas cosas.'},
+  {id:'nombreFinal',t:'text',l:'Nombre elegido'},
+  {id:'nombreChecks',t:'checklist',l:'Verificaciones antes de decidir',items:NAME_CHECKS,h:'Revisa los temas legales con un profesional antes de invertir en logo e impresos.'},
+  {id:'nombreNotas',t:'textarea',l:'Notas'}]},
+ {id:'logo',icon:'✏️',title:'Logo',why:'El logo debe funcionar chiquito (foto de perfil redonda) y grande (puerta del estudio). Define qué tipo de logo necesitas antes de diseñarlo.',fields:[
+  {id:'logoTipo',t:'chips',max:1,l:'Tipo de logo',opts:['Solo texto','Iniciales (monograma)','Símbolo o ícono','Texto + símbolo','Ilustración','Caligrafía a mano']},
+  {id:'logoEstilo',t:'chips',l:'Estilo',opts:['Minimalista','Delicado','Geométrico','Orgánico','Retro','Lujoso','Juguetón','Artístico','Moderno']},
+  {id:'logoSim',t:'textarea',l:'Símbolos o formas que te gustan, y los que evitas',h:'Ej: flor, luna, estrella, mano… Evitar: clichés de uñas o corazones.'},
+  {id:'logoUso',t:'textarea',l:'¿Dónde se verá más?',h:'Foto de perfil, puerta, bolsas, fotos de uñas con marca de agua…'},
+  {id:'logoDeliv',t:'checklist',l:'Entregables que necesitas',items:LOGO_DELIV},
+  {id:'logoQuien',t:'select',l:'¿Quién lo diseña?',opts:['Aún no lo sé','Yo (Canva u otra herramienta)','Diseñadora o diseñador','Plantilla personalizada','IA + ajustes']},
+  {id:'logoNotas',t:'textarea',l:'Notas e ideas de logo'}]},
+ {id:'color',icon:'🎨',title:'Colores y tipografías',why:'Los colores y las letras son lo que más se reconoce. Elige pocos (3 a 5) y comprueba que se lean bien.',fields:[
+  {id:'sensacion',t:'textarea',l:'¿Qué sensación quieres que den tus colores?',h:'Ej: calma, lujo suave, energía, naturaleza…'},
+  {id:'paleta',t:'colors',l:'Paleta de colores',h:'Elige de 3 a 5 colores y asigna un rol a cada uno. Verás si el texto se lee bien sobre blanco o negro.'},
+  {id:'coloresEvitar',t:'textarea',l:'Colores que NO quieres'},
+  {id:'fuentes',t:'fonts',l:'Tipografías',h:'Escribe el nombre exacto de una fuente de Google Fonts (ej: Playfair Display, Poppins, Cormorant Garamond) y verás la vista previa. Una para títulos y otra para textos.'},
+  {id:'preview',t:'preview',l:'Vista previa'}]},
+ {id:'estilo',icon:'📸',title:'Estilo visual y fotos',why:'Tus fotos de uñas son tu mejor publicidad. Un estilo constante hace que tu perfil se reconozca de un vistazo.',fields:[
+  {id:'fotos',t:'textarea',l:'Cómo se ven tus fotos de uñas',h:'Fondo, luz, manos, encuadre, distancia.'},
+  {id:'fondos',t:'chips',l:'Fondos y escenografía',opts:['Fondo liso','Telas','Mármol o piedra','Flores','Minimalista','Colorido','Con objetos y props','Luz natural']},
+  {id:'edicion',t:'textarea',l:'Edición',h:'Filtro o preset, contraste, tonos.'},
+  {id:'graficos',t:'textarea',l:'Elementos gráficos',h:'Patrones, formas, íconos, marcos, líneas.'},
+  {id:'reels',t:'textarea',l:'Estilo de videos y reels',h:'Música, velocidad, textos, cierres.'},
+  {id:'highl',t:'checklist',l:'Historias destacadas',items:HIGHL}]},
+ {id:'exp',icon:'🏠',title:'Experiencia y estudio',why:'La marca no es solo lo que se ve en redes: también es cómo se siente el estudio y cómo hablas con tus clientas.',fields:[
+  {id:'ambiente',t:'textarea',l:'Cómo debería verse y sentirse el estudio',h:'Colores, luz, decoración, olor, música.'},
+  {id:'cortesias',t:'textarea',l:'Cortesías y detalles',h:'Café, snacks, tarjetas, packaging.'},
+  {id:'menu',t:'textarea',l:'Nombres de tus servicios y cómo presentas el menú',h:'¿Cambian los nombres? ¿Cómo muestras los niveles de diseño?'},
+  {id:'mensajes',t:'textarea',l:'Mensajes tipo',h:'Confirmación de cita, recordatorio, agradecimiento, cuidados después del servicio.'},
+  {id:'memorable',t:'textarea',l:'Un detalle que haga que te recuerden',h:'Ej: instrucciones de cuidado bonitas, un mini regalo, una despedida especial.'}]},
+ {id:'apps',icon:'📦',title:'Dónde se aplica',why:'Estos son todos los lugares donde tendrás que actualizar tu marca. Marca el estado de cada uno para no olvidar ninguno.',fields:[
+  {id:'tp',t:'status',l:'Puntos de contacto',items:TOUCH}]},
+ {id:'lanz',icon:'🚀',title:'Lanzamiento',why:'Cómo presentas la nueva marca importa tanto como diseñarla. Piensa en tus clientas actuales y en las nuevas.',fields:[
+  {id:'estrategia',t:'select',l:'Forma de lanzamiento',opts:['Aún no lo sé','Cambio de un día para otro','Transición gradual','Lanzamiento con evento o sorteo']},
+  {id:'fechaAnuncio',t:'date',l:'Fecha del anuncio'},
+  {id:'anuncio',t:'textarea',l:'Cómo avisarás a tus clientas actuales'},
+  {id:'mensajeClientas',t:'textarea',l:'Borrador del mensaje para clientas',h:'Explica el cambio, qué sigue igual y qué es nuevo.'},
+  {id:'teaser',t:'textarea',l:'Plan de teaser (semanas previas)',h:'Adelantos, cuenta regresiva, detrás de cámaras.'},
+  {id:'cuentas',t:'textarea',l:'Qué pasa con tu usuario de Instagram, Fresha y enlaces viejos',h:'Si cambias de nombre, planifica avisos y redirecciones.'},
+  {id:'precios',t:'textarea',l:'¿Cómo se conecta con tu plan de subida de precios?',h:'Mira la pestaña "Plan de precios" en Costos por servicio. Un buen momento para subir precios es junto al lanzamiento.'},
+  {id:'detalle',t:'textarea',l:'Detalle de lanzamiento',h:'Sorteo, regalo para quien invite a una amiga, etc.'}]},
+ {id:'presu',icon:'💰',title:'Presupuesto y plazos',why:'Un rebranding se puede hacer por fases. Ponle costo y fechas a cada parte para que sea realista.',fields:[
+  {id:'presupuesto',t:'number',l:'Presupuesto total disponible (Ft)'},
+  {id:'costos',t:'budget',l:'Costos',h:'Pon el costo estimado y si lo harás tú o lo contratas.'},
+  {id:'fases',t:'timeline',l:'Fases y fechas'},
+  {id:'ayuda',t:'textarea',l:'Personas que pueden ayudarte',h:'Diseñadora, fotógrafa, amiga, impresor, contable. Con sus contactos.'}]},
+ {id:'brief',icon:'📄',title:'Brief final',why:'Aquí se junta todo lo que escribiste en un documento listo para guardar, imprimir o enviar a una diseñadora.',special:'brief',fields:[]}
+];
+
+// ============ ESTADO ============
+const KEY='nxl_rebranding';
+let S={};try{S=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){S={};}
+SECTIONS.forEach(s=>s.fields.forEach(f=>{if(f.def!==undefined&&S[f.id]===undefined)S[f.id]=f.def;}));
+let cur=0,saveT=null;
+try{const c=parseInt(localStorage.getItem('nxl_rebranding_sec'));if(c>=0&&c<SECTIONS.length)cur=c;}catch(e){}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}const el=document.getElementById('saved');el.classList.add('show');clearTimeout(saveT);saveT=setTimeout(()=>el.classList.remove('show'),1200);updProgress();}
+function setV(id,v){S[id]=v;save();}
+function arr(id){if(!Array.isArray(S[id]))S[id]=[];return S[id];}
+function obj(id){if(!S[id]||typeof S[id]!=='object'||Array.isArray(S[id]))S[id]={};return S[id];}
+
+function filled(f){
+  const v=S[f.id];
+  switch(f.t){
+    case 'list':return Array.isArray(v)&&v.some(x=>x&&x.trim());
+    case 'chips':return Array.isArray(v)&&v.length>0;
+    case 'sliders':return v&&Object.keys(v).length>0;
+    case 'checklist':return v&&Object.values(v).some(Boolean);
+    case 'status':return v&&Object.values(v).some(x=>x&&x.s&&x.s!=='Pendiente');
+    case 'rows':case 'names':case 'colors':return Array.isArray(v)&&v.some(r=>Object.values(r).some(x=>x&&String(x).trim&&String(x).trim()!==''&&x!==false&&x!==3&&x!=='#c9a0a0'));
+    case 'fonts':return v&&(v.h||v.b);
+    case 'budget':return Array.isArray(v)&&v.some(r=>r.c>0);
+    case 'timeline':return Array.isArray(v)&&v.some(r=>r.f||r.d);
+    case 'preview':return false;
+    default:return v!==undefined&&String(v).trim()!=='';
+  }
+}
+function secProgress(s){const fs=s.fields.filter(f=>f.t!=='preview');if(!fs.length)return null;return fs.filter(filled).length/fs.length;}
+function updProgress(){
+  let tot=0,n=0;
+  SECTIONS.forEach((s,i)=>{const p=secProgress(s);const el=document.getElementById('pct-'+i);if(p===null)return;tot+=p;n++;if(el){el.textContent=Math.round(p*100)+'%';el.className='pct'+(p>=1?' done':'');}});
+  const t=n?Math.round(tot/n*100):0;document.getElementById('total-pct').textContent=t+'%';document.getElementById('total-bar').style.width=t+'%';
+}
+
+// ============ RENDER DE CAMPOS ============
+function renderField(f){
+  const v=S[f.id];let body='';
+  switch(f.t){
+    case 'text':body=`<input type="text" value="${esc(v)}" oninput="setV('${f.id}',this.value)">`;break;
+    case 'number':body=`<input type="number" inputmode="numeric" value="${esc(v)}" oninput="setV('${f.id}',this.value)">`;break;
+    case 'date':body=`<input type="date" value="${esc(v)}" onchange="setV('${f.id}',this.value)">`;break;
+    case 'textarea':body=`<textarea oninput="setV('${f.id}',this.value)">${esc(v)}</textarea>`;break;
+    case 'select':body=`<select onchange="setV('${f.id}',this.value)"><option value="">Elegir…</option>${f.opts.map(o=>`<option ${v===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;break;
+    case 'chips':{const sel=Array.isArray(v)?v:[];body=`<div class="chips">${f.opts.map(o=>`<span class="chip ${sel.includes(o)?'on':''}" onclick="chip('${f.id}','${esc(o)}',${f.max||0},this)">${esc(o)}</span>`).join('')}</div>${f.max>1?`<div class="hint" style="margin-top:6px" id="cnt-${f.id}">${sel.length} de ${f.max} elegidos</div>`:''}`;break;}
+    case 'list':{const a=Array.isArray(v)&&v.length?v:[''];body=a.map((x,i)=>`<div class="row"><input type="text" value="${esc(x)}" placeholder="${esc(f.ph||'')}" oninput="listSet('${f.id}',${i},this.value)"><button class="btn x" onclick="listDel('${f.id}',${i})">✕</button></div>`).join('')+`<button class="btn sm" onclick="listAdd('${f.id}')">+ Añadir</button>`;break;}
+    case 'sliders':{const o=v||{};body=PERS.map(([a,b])=>{const k=a+'|'+b,t=o[k]!==undefined;return `<div class="slider ${t?'':'untouched'}"><span>${a}</span><input type="range" min="1" max="5" step="1" value="${t?o[k]:3}" oninput="slide('${f.id}','${k}',this.value,this)"><span>${b}</span></div>`;}).join('');break;}
+    case 'checklist':{const o=v||{};body=`<div class="checks">${f.items.map((it,i)=>`<label><input type="checkbox" ${o[i]?'checked':''} onchange="chk('${f.id}',${i},this.checked)"> <span>${esc(it)}</span></label>`).join('')}</div>`;break;}
+    case 'status':{const o=v||{};body=`<div class="tp colhead"><span>Dónde</span><span>Estado</span><span>Notas</span></div>`+f.items.map((it,i)=>{const r=o[i]||{};return `<div class="tp"><span>${esc(it)}</span><select onchange="st('${f.id}',${i},'s',this.value)">${['Pendiente','En proceso','Listo','No aplica'].map(x=>`<option ${(r.s||'Pendiente')===x?'selected':''}>${x}</option>`).join('')}</select><input type="text" value="${esc(r.n||'')}" placeholder="Notas" oninput="st('${f.id}',${i},'n',this.value,true)"></div>`;}).join('');break;}
+    case 'rows':{const a=arr(f.id);const g=`grid-template-columns:${f.cols.map(()=>'1fr').join(' ')} 40px`;body=`<div class="scroll"><div style="min-width:480px"><div class="grid-r colhead" style="${g}">${f.cols.map(c=>`<span>${c[1]}</span>`).join('')}<span></span></div>${a.map((r,i)=>`<div class="grid-r" style="${g}">${f.cols.map(c=>`<input type="text" value="${esc(r[c[0]])}" oninput="rowSet('${f.id}',${i},'${c[0]}',this.value)">`).join('')}<button class="btn x" onclick="rowDel('${f.id}',${i})">✕</button></div>`).join('')}</div></div><button class="btn sm" onclick="rowAdd('${f.id}')">${f.addLabel||'+ Añadir'}</button>`;break;}
+    case 'names':{const a=arr(f.id);const best=a.length?Math.max(...a.map(nameScore)):0;const g='grid-template-columns:1.4fr 56px 56px 56px 56px 70px 60px 70px 40px';
+      body=`<div class="scroll"><div style="min-width:640px"><div class="grid-r colhead" style="${g}"><span>Nombre</span><span>Fácil</span><span>@ libre</span><span>Dominio</span><span>Marca</span><span>Me gusta</span><span>Puntaje</span><span></span><span></span></div>`+a.map((r,i)=>`<div class="grid-r" style="${g}"><input type="text" value="${esc(r.n)}" onchange="rowSet('${f.id}',${i},'n',this.value,true)">${['p','h','d','m'].map(k=>`<input type="checkbox" style="justify-self:center" ${r[k]?'checked':''} onchange="rowSet('${f.id}',${i},'${k}',this.checked,true)">`).join('')}<select onchange="rowSet('${f.id}',${i},'g',+this.value,true)">${[1,2,3,4,5].map(n=>`<option ${(r.g||3)==n?'selected':''}>${n}</option>`).join('')}</select><b>${nameScore(r)}${best&&nameScore(r)===best&&a.length>1?' ⭐':''}</b><button class="btn sm" onclick="pickName(${i})">Elegir</button><button class="btn x" onclick="rowDel('${f.id}',${i},true)">✕</button></div>`).join('')+`</div></div><button class="btn sm" onclick="rowAdd('${f.id}',true,{g:3})">+ Añadir nombre</button>`;break;}
+    case 'colors':{const a=arr(f.id);const ROL=['Principal','Secundario','Acento','Fondo','Texto'];
+      body=a.map((r,i)=>{const cw=ratio(r.hex,'#ffffff'),cb=ratio(r.hex,'#000000');return `<div class="grid-r" style="grid-template-columns:48px 1fr 130px 1.4fr 40px"><input type="color" class="swatch" value="${esc(r.hex||'#c9a0a0')}" onchange="rowSet('${f.id}',${i},'hex',this.value,true)"><input type="text" placeholder="Nombre del color (ej: rosa polvo)" value="${esc(r.n)}" onchange="rowSet('${f.id}',${i},'n',this.value)"><select onchange="rowSet('${f.id}',${i},'rol',this.value,true)"><option value="">Rol…</option>${ROL.map(x=>`<option ${r.rol===x?'selected':''}>${x}</option>`).join('')}</select><span style="font-size:11px;color:#777">${esc(r.hex||'#c9a0a0')} · texto blanco ${cw.toFixed(1)}:1 ${cw>=4.5?'<span class="pill g">se lee</span>':'<span class="pill r">poco contraste</span>'} · texto negro ${cb.toFixed(1)}:1 ${cb>=4.5?'<span class="pill g">se lee</span>':'<span class="pill r">poco</span>'}</span><button class="btn x" onclick="rowDel('${f.id}',${i},true)">✕</button></div>`;}).join('')+`<button class="btn sm" onclick="rowAdd('${f.id}',true,{hex:'#c9a0a0'})">+ Añadir color</button>`;break;}
+    case 'fonts':{const o=obj(f.id);body=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><div class="hint">Títulos</div><input type="text" value="${esc(o.h||'')}" placeholder="Ej: Playfair Display" onchange="fontSet('h',this.value)"></div><div><div class="hint">Textos</div><input type="text" value="${esc(o.b||'')}" placeholder="Ej: Poppins" onchange="fontSet('b',this.value)"></div></div>`;break;}
+    case 'preview':body=previewHtml();break;
+    case 'budget':{const a=budgetRows();const tot=a.reduce((s,r)=>s+(+r.c||0),0);const pres=+S.presupuesto||0;
+      body=`<div class="scroll"><div style="min-width:480px"><div class="grid-r colhead" style="grid-template-columns:1.6fr 1fr 1fr"><span>Concepto</span><span>Costo (Ft)</span><span>Quién</span></div>${a.map((r,i)=>`<div class="grid-r" style="grid-template-columns:1.6fr 1fr 1fr"><input type="text" value="${esc(r.n)}" oninput="bSet(${i},'n',this.value)"><input type="number" inputmode="numeric" value="${r.c||''}" onchange="bSet(${i},'c',this.value,true)"><select onchange="bSet(${i},'q',this.value)"><option ${r.q==='Yo'?'selected':''}>Yo</option><option ${r.q==='Contrato'?'selected':''}>Contrato</option></select></div>`).join('')}</div></div><div style="display:flex;justify-content:space-between;margin-top:8px;font-size:14px;font-weight:500"><span>Total estimado</span><span>${tot.toLocaleString('hu-HU')} Ft</span></div>${pres?`<div class="hint">${tot<=pres?'Dentro de tu presupuesto: te sobran '+(pres-tot).toLocaleString('hu-HU')+' Ft.':'Te pasas del presupuesto por '+(tot-pres).toLocaleString('hu-HU')+' Ft. Considera hacerlo por fases.'}</div>`:''}`;break;}
+    case 'timeline':{const a=timelineRows();body=`<div class="grid-r colhead" style="grid-template-columns:1.6fr 1fr 70px"><span>Fase</span><span>Fecha objetivo</span><span>Hecho</span></div>`+a.map((r,i)=>`<div class="grid-r" style="grid-template-columns:1.6fr 1fr 70px"><span style="font-size:13px">${esc(r.f)}</span><input type="date" value="${esc(r.d||'')}" onchange="tSet(${i},'d',this.value)"><input type="checkbox" style="justify-self:center" ${r.x?'checked':''} onchange="tSet(${i},'x',this.checked,true)"></div>`).join('');break;}
+  }
+  return `<div class="field"><label class="l">${esc(f.l)}</label>${f.h?`<div class="hint">${esc(f.h)}</div>`:''}${body}</div>`;
+}
+
+// ============ HELPERS DE CAMPOS ============
+function chip(id,o,max,el){const a=arr(id);const i=a.indexOf(o);
+  if(i>=0){a.splice(i,1);el.classList.remove('on');}
+  else{if(max===1){a.length=0;el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));}
+    else if(max&&a.length>=max){return;}
+    a.push(o);el.classList.add('on');}
+  const c=document.getElementById('cnt-'+id);if(c)c.textContent=a.length+' de '+max+' elegidos';save();}
+function listSet(id,i,v){const a=arr(id);while(a.length<=i)a.push('');a[i]=v;save();}
+function listAdd(id){const a=arr(id);if(!a.length)a.push('');a.push('');save();render(false);}
+function listDel(id,i){const a=arr(id);a.splice(i,1);save();render(false);}
+function slide(id,k,v,el){obj(id)[k]=+v;el.parentNode.classList.remove('untouched');save();}
+function chk(id,i,on){obj(id)[i]=on;save();}
+function st(id,i,k,v,quiet){const o=obj(id);o[i]=o[i]||{};o[i][k]=v;save();if(k==='s')render(false);}
+function rowAdd(id,rerender,def){arr(id).push(Object.assign({},def||{}));save();render(false);}
+function rowDel(id,i){arr(id).splice(i,1);save();render(false);}
+function rowSet(id,i,k,v,rerender){const a=arr(id);if(!a[i])return;a[i][k]=v;save();if(rerender)render(false);}
+function nameScore(r){return ['p','h','d','m'].filter(k=>r[k]).length+(+r.g||3);}
+function pickName(i){const r=arr('candidatos')[i];if(r&&r.n){S.nombreFinal=r.n;save();render(false);}}
+function lum(hex){const h=(hex||'#c9a0a0').replace('#','');const c=[0,2,4].map(i=>parseInt(h.substr(i,2),16)/255).map(v=>v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+function ratio(a,b){const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+function loadFont(n){if(!n)return;const id='gf-'+n.replace(/\W/g,'');if(document.getElementById(id))return;const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+encodeURIComponent(n).replace(/%20/g,'+')+':wght@400;600&display=swap';document.head.appendChild(l);}
+function fontSet(k,v){obj('fuentes')[k]=v.trim();save();loadFont(v.trim());render(false);}
+function colorBy(rol,def){const r=(S.paleta||[]).find(x=>x.rol===rol&&x.hex);return r?r.hex:def;}
+function previewHtml(){
+  const o=S.fuentes||{},name=S.nombreFinal||S.marcaActual||'Tu marca';loadFont(o.h);loadFont(o.b);
+  const bg=colorBy('Fondo','#ffffff'),main=colorBy('Principal','#1a1a18'),acc=colorBy('Acento','#c9a0a0'),txt=colorBy('Texto','#1a1a18'),sec=colorBy('Secundario','#eee');
+  const hf=o.h?`'${o.h}',serif`:'inherit',bf=o.b?`'${o.b}',sans-serif`:'inherit';
+  const tag=(S.eslogan&&S.eslogan.find(x=>x&&x.trim()))||'Tu frase de marca aparecerá aquí';
+  return `<div style="background:${bg};border:0.5px solid #ddd;border-radius:12px;padding:28px;color:${txt};font-family:${bf}"><div style="display:flex;gap:6px;margin-bottom:18px">${[main,sec,acc,bg,txt].map(c=>`<span style="width:22px;height:22px;border-radius:50%;background:${c};border:0.5px solid #ccc"></span>`).join('')}</div><div style="font-family:${hf};font-size:34px;line-height:1.1;color:${main}">${esc(name)}</div><div style="margin-top:8px;font-size:15px;opacity:.85">${esc(tag)}</div><div style="margin-top:16px;display:inline-block;padding:9px 20px;border-radius:24px;background:${acc};color:${lum(acc)>0.5?'#1a1a18':'#fff'};font-size:13px">Reservar cita</div></div><div class="hint" style="margin-top:6px">Usa tu nombre elegido, tus colores con rol y tus fuentes. Si no ves la fuente, revisa que el nombre esté bien escrito.</div>`;
+}
+function budgetRows(){if(!Array.isArray(S.costos)||!S.costos.length)S.costos=BUDGET_DEF.map(n=>({n,c:0,q:'Yo'}));return S.costos;}
+function bSet(i,k,v,rr){const a=budgetRows();a[i][k]=k==='c'?(parseFloat(v)||0):v;save();if(rr)render(false);}
+function timelineRows(){if(!Array.isArray(S.fases)||!S.fases.length)S.fases=PHASES.map(f=>({f,d:'',x:false}));return S.fases;}
+function tSet(i,k,v,rr){const a=timelineRows();a[i][k]=v;save();}
+
+// ============ BRIEF ============
+function valText(f){
+  const v=S[f.id];
+  switch(f.t){
+    case 'list':return (v||[]).filter(x=>x&&x.trim()).map(x=>'- '+x).join('\n');
+    case 'chips':return (v||[]).join(', ');
+    case 'sliders':return Object.entries(v||{}).map(([k,n])=>{const [a,b]=k.split('|');return `- ${a} ↔ ${b}: ${n}/5`;}).join('\n');
+    case 'checklist':return f.items.map((it,i)=>`- [${(v||{})[i]?'x':' '}] ${it}`).join('\n');
+    case 'status':return f.items.map((it,i)=>{const r=(v||{})[i]||{};return `- ${it}: ${r.s||'Pendiente'}${r.n?' ('+r.n+')':''}`;}).join('\n');
+    case 'rows':return (v||[]).filter(r=>r.n).map(r=>'- '+f.cols.map(c=>r[c[0]]?`${c[1]}: ${r[c[0]]}`:'').filter(Boolean).join(' · ')).join('\n');
+    case 'names':return (v||[]).filter(r=>r.n).sort((a,b)=>nameScore(b)-nameScore(a)).map(r=>`- ${r.n} (puntaje ${nameScore(r)}; fácil ${r.p?'sí':'no'}, @ libre ${r.h?'sí':'no'}, dominio ${r.d?'sí':'no'}, marca ${r.m?'sí':'no'}, me gusta ${r.g||3}/5)`).join('\n');
+    case 'colors':return (v||[]).filter(r=>r.hex).map(r=>`- ${r.n||'Color'} ${r.hex}${r.rol?' ('+r.rol+')':''}`).join('\n');
+    case 'fonts':return v?[v.h?'Títulos: '+v.h:'',v.b?'Textos: '+v.b:''].filter(Boolean).join('\n'):'';
+    case 'budget':return budgetRows().filter(r=>r.c>0).map(r=>`- ${r.n}: ${(+r.c).toLocaleString('hu-HU')} Ft (${r.q})`).join('\n');
+    case 'timeline':return timelineRows().map(r=>`- [${r.x?'x':' '}] ${r.f}${r.d?' — '+r.d:''}`).join('\n');
+    case 'preview':return '';
+    default:return v!==undefined&&String(v).trim()?String(v).trim():'';
+  }
+}
+function buildBrief(){
+  const nombre=S.nombreFinal||S.marcaActual||'Mi marca';
+  let t=`# Brief de rebranding: ${nombre}\n`;
+  if(S.marcaActual&&S.nombreFinal&&S.marcaActual!==S.nombreFinal)t+=`(antes: ${S.marcaActual})\n`;
+  t+=`Estudio de uñas independiente · Budapest\n`;
+  const miss=[];
+  SECTIONS.forEach(s=>{if(s.special)return;let sec='';s.fields.forEach(f=>{const x=valText(f);if(x)sec+=`\n**${f.l}**\n${x}\n`;else if(f.t!=='preview')miss.push(s.title+': '+f.l);});if(sec)t+=`\n## ${s.title}\n${sec}`;});
+  return {text:t,miss};
+}
+function copyBrief(){const t=document.getElementById('brief-text').value;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Copiado ✓')).catch(()=>{const el=document.getElementById('brief-text');el.select();document.execCommand('copy');toast('Copiado ✓');});}
+function dlBrief(){const b=new Blob([document.getElementById('brief-text').value],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='brief_rebranding.md';a.click();}
+function toast(m){const e=document.getElementById('saved');e.textContent=m;e.classList.add('show');setTimeout(()=>{e.classList.remove('show');e.textContent='Guardado ✓';},1500);}
+function nextStep(){for(let i=0;i<SECTIONS.length-1;i++){const p=secProgress(SECTIONS[i]);if(p!==null&&p<1)return i;}return -1;}
+
+// ============ RENDER GENERAL ============
+function renderSide(){
+  document.getElementById('side').innerHTML=SECTIONS.map((s,i)=>`<button class="step ${i===cur?'active':''}" onclick="go(${i})"><span>${s.icon}</span><span>${s.title}</span><span class="pct" id="pct-${i}"></span></button>`).join('');
+  updProgress();
+}
+function render(top){
+  const y=window.scrollY,s=SECTIONS[cur];
+  let h=`<h1>${s.icon} ${s.title}</h1><div class="why">${s.why}</div>`;
+  if(s.special==='brief'){
+    const b=buildBrief(),ns=nextStep();
+    h+=(ns>=0?`<div class="noprint" style="background:#fef9e7;border:0.5px solid #f0d060;border-radius:8px;padding:10px 14px;font-size:13px;color:#7a5a00;margin-bottom:12px">Aún faltan respuestas. Siguiente paso recomendado: <a href="#" onclick="go(${ns});return false" style="color:#7a5a00;font-weight:500">${SECTIONS[ns].icon} ${SECTIONS[ns].title}</a>.</div>`:`<div class="noprint" style="background:#e6f4ee;border-radius:8px;padding:10px 14px;font-size:13px;color:#1a7a4a;margin-bottom:12px">Todas las secciones tienen respuestas. Revisa el brief y compártelo.</div>`)
+      +`<div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn dark" onclick="copyBrief()">Copiar</button><button class="btn" onclick="dlBrief()">Descargar (.md)</button><button class="btn" onclick="window.print()">Imprimir / PDF</button></div>`
+      +`<textarea id="brief-text" class="noprint" style="min-height:360px;font-size:12px;font-family:ui-monospace,monospace" readonly>${esc(b.text)}</textarea>`
+      +(b.miss.length?`<details class="noprint" style="margin-top:12px"><summary style="cursor:pointer;font-size:13px;color:#666">Preguntas sin responder (${b.miss.length})</summary><ul style="font-size:12px;color:#777;margin:8px 0 0 18px;line-height:1.6">${b.miss.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></details>`:'');
+  } else h+=s.fields.map(renderField).join('');
+  h+=`<div class="nav-btns"><button class="btn" ${cur===0?'disabled style="opacity:.4"':''} onclick="go(${cur-1})">← Anterior</button>${cur<SECTIONS.length-1?`<button class="btn dark" onclick="go(${cur+1})">Siguiente →</button>`:''}</div>`;
+  document.getElementById('main').innerHTML=h;
+  renderSide();
+  if(top)window.scrollTo(0,0);else window.scrollTo(0,y);
+}
+function go(i){if(i<0||i>=SECTIONS.length)return;cur=i;try{localStorage.setItem('nxl_rebranding_sec',i);}catch(e){}render(true);}
+(function(){const o=S.fuentes||{};loadFont(o.h);loadFont(o.b);render(true);})();
+</script>
+</body>
+</html>
