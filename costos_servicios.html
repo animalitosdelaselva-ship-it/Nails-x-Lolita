@@ -184,6 +184,11 @@
     <div style="font-size:12px;color:#666;margin-bottom:6px">Duración de cada servicio, en minutos (preparación + atención + cierre)</div>
     <div id="duraciones-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px"></div>
   </div>
+  <div class="config-box">
+    <div style="font-size:13px;font-weight:500;margin-bottom:4px">Niveles de diseño <span style="font-size:11px;color:#aaa;font-weight:400">(extra para servicios con semipermanente)</span></div>
+    <div style="font-size:12px;color:#666;margin-bottom:8px">Precio extra y minutos de cada nivel. Sus insumos se asignan en la pestaña Servicios, al final de la lista. Deja en 0 los niveles que no uses.</div>
+    <div id="tiers-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px"></div>
+  </div>
   <div id="analisis-content"></div>
 </div>
 
@@ -206,6 +211,30 @@ const SERVICIOS_BASE = [
 
 function getPreciosEditados(){return getObj('nxl_precios_simulados',{});}
 function setPreciosEditados(v){setObj('nxl_precios_simulados',v);}
+const SEMI_IDS=['manicura_semi','manicura_struct','pedicura_semi','gelx_s','gelx_m','gelx_l','gelx_xl'];
+const TIERS_BASE=[1000,2000,4000,6000,8000].map((p,i)=>({id:'tier'+(i+1),nombre:'Diseño Tier '+(i+1),precio:p,min:0}));
+function getTiers(){
+  const st=getObj('nxl_tiers',{});
+  return TIERS_BASE.map(t=>({...t,...(st[t.id]||{})}));
+}
+function setTier(id,field,val){
+  const st=getObj('nxl_tiers',{});
+  st[id]=st[id]||{};
+  st[id][field]=parseFloat(val)||0;
+  setObj('nxl_tiers',st);
+  renderAnalisis();
+  renderServiciosList();
+}
+function renderTiersGrid(){
+  document.getElementById('tiers-grid').innerHTML=getTiers().map(t=>`
+    <div style="background:#fafaf8;border:0.5px solid #e8e8e4;border-radius:8px;padding:8px 10px">
+      <div style="font-size:12px;font-weight:500;margin-bottom:6px">${t.nombre}</div>
+      <div style="display:flex;gap:8px">
+        <div class="form-group" style="flex:1"><label class="field-label">Precio extra (Ft)</label><input type="number" inputmode="numeric" value="${t.precio||''}" placeholder="0" onchange="setTier('${t.id}','precio',this.value)"></div>
+        <div class="form-group" style="flex:1"><label class="field-label">Minutos</label><input type="number" inputmode="numeric" value="${t.min||''}" placeholder="0" onchange="setTier('${t.id}','min',this.value)"></div>
+      </div>
+    </div>`).join('');
+}
 function getSERVICIOS(){
   const editados=getPreciosEditados();
   return SERVICIOS_BASE.map(s=>({...s, precio: editados[s.id]!==undefined ? editados[s.id] : s.precio, precioBase: s.precio}));
@@ -262,7 +291,7 @@ function renderServiciosList(){
     el.innerHTML=`<div class="empty">Primero cargá insumos en la base de insumos.<br><small style="color:#aaa">Una vez cargados, aparecerán aquí para asignarlos a cada servicio.</small></div>`;
     return;
   }
-  el.innerHTML=getSERVICIOS().map(sv=>{
+  el.innerHTML=getSERVICIOS().concat(getTiers().map(t=>({id:t.id,nombre:t.nombre+' (extra de diseño)',precio:t.precio}))).map(sv=>{
     const svAsig=asig[sv.id]||[];
     const costoTotal=svAsig.reduce((s,a)=>{
       const ins=insumos.find(i=>i.id===a.insumoId);
@@ -524,6 +553,7 @@ function setDuracion(id,v){
   renderAnalisis();
 }
 function renderDuraciones(){
+  renderTiersGrid();
   const d=getDuraciones();
   const vh=document.getElementById('a-valor-hora');
   if(vh) vh.value=getDesinfeccionConfig().valorHora||'';
@@ -577,6 +607,19 @@ function renderAnalisis(){
     return{...sv,costoInsumos,costoTiempo,min,costoTotal,margen,pct};
   });
 
+  const tiers=getTiers().filter(t=>t.precio>0||t.min>0);
+  const tierExtra=tiers.map(t=>({...t,costo:calcCostoServicio(t.id)+(t.min/60)*valorHora}));
+  const semiRows=rows.filter(r=>SEMI_IDS.includes(r.id));
+  const cell=(precio,costo)=>{const g=precio-costo;const pc=precio>0?Math.round(g/precio*100):0;return `<div style="text-align:right"><span class="pill ${pc>=50?'green':pc>=30?'warn':'red'}">${pc}%</span><div style="font-size:11px;color:${g>=0?'#555':'#c0392b'};margin-top:2px">${g>=0?'+':''}${fmt(g)}</div></div>`;};
+  const gcols='1fr '+['80px'].concat(tierExtra.map(()=>'80px')).join(' ');
+  const matriz=tierExtra.length&&semiRows.length?`
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;overflow-x:auto;margin-bottom:10px"><div style="min-width:${200+80*(tierExtra.length+1)}px">
+      <div style="padding:12px 16px 4px"><div style="font-size:13px;font-weight:500">Servicios con semipermanente + diseño</div>
+      <div style="font-size:11px;color:#999;margin:2px 0 8px">Margen y ganancia después de pagarte tu tiempo. Base = servicio sin diseño.</div></div>
+      <div style="padding:6px 16px;border-bottom:0.5px solid #f0f0ee;display:grid;grid-template-columns:${gcols};gap:8px;font-size:11px;color:#999;font-weight:500"><span>SERVICIO</span><span style="text-align:right">BASE</span>${tierExtra.map(t=>`<span style="text-align:right">+ TIER ${t.id.slice(4)}<br><span style="font-weight:400">+${fmt(t.precio)}</span></span>`).join('')}</div>
+      ${semiRows.map(r=>`<div style="padding:8px 16px;border-bottom:0.5px solid #f5f5f3;display:grid;grid-template-columns:${gcols};gap:8px;align-items:center;font-size:13px"><span style="font-weight:500">${r.nombre}<div style="font-size:11px;color:#999;font-weight:400">${fmt(r.precio)} · costo ${fmt(r.costoTotal)}</div></span>${cell(r.precio,r.costoTotal)}${tierExtra.map(t=>cell(r.precio+t.precio,r.costoTotal+t.costo)).join('')}</div>`).join('')}
+      <div style="padding:8px 16px;font-size:11px;color:#999">Cada nivel suma sus insumos y sus minutos × tu valor hora al costo. Gastos fijos y desinfección no cambian.</div>
+    </div></div>`:'';
   const maxCosto=Math.max(...rows.map(r=>r.costoTotal),1);
   const avgMargen=Math.round(rows.reduce((s,r)=>s+r.pct,0)/rows.length);
 
@@ -604,6 +647,7 @@ function renderAnalisis(){
           <span style="text-align:right"><span class="pill ${r.pct>=50?'green':r.pct>=30?'warn':'red'}">${r.costoTotal>0?r.pct+'%':'—'}</span></span>
         </div>`).join('')}
     </div></div>
+    ${matriz}
     ${valorHora>0&&!Object.keys(duraciones).length?'<div style="font-size:12px;color:#c0392b;margin-bottom:10px">Completa la duración de cada servicio para incluir tu tiempo en el costo.</div>':''}
 
     <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px">
