@@ -174,6 +174,16 @@
     </div>
     <div id="precios-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px"></div>
   </div>
+  <div class="config-box">
+    <div style="font-size:13px;font-weight:500;margin-bottom:4px">Tu tiempo <span style="font-size:11px;color:#aaa;font-weight:400">(se suma al costo de cada servicio)</span></div>
+    <div class="form-group" style="max-width:260px;margin-bottom:12px">
+      <label class="field-label">Tu valor hora (Ft)</label>
+      <input type="number" id="a-valor-hora" placeholder="Ej: 5800" onchange="setValorHora(this.value)">
+      <span class="hint">Es el mismo de la pestaña Desinfección</span>
+    </div>
+    <div style="font-size:12px;color:#666;margin-bottom:6px">Duración de cada servicio, en minutos (preparación + atención + cierre)</div>
+    <div id="duraciones-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px"></div>
+  </div>
   <div id="analisis-content"></div>
 </div>
 
@@ -498,6 +508,42 @@ function resetPrecios(){
   showToast('Precios restaurados ✓');
 }
 
+// ---- DURACIONES Y TIEMPO ----
+function getDuraciones(){return getObj('nxl_duraciones',{});}
+function setValorHora(v){
+  const cfg=getDesinfeccionConfig();
+  cfg.valorHora=parseFloat(v)||0;
+  setObj('nxl_desinfeccion_config',cfg);
+  renderAnalisis();
+}
+function setDuracion(id,v){
+  const d=getDuraciones();
+  const n=parseFloat(v)||0;
+  if(n>0) d[id]=n; else delete d[id];
+  setObj('nxl_duraciones',d);
+  renderAnalisis();
+}
+function renderDuraciones(){
+  const d=getDuraciones();
+  const vh=document.getElementById('a-valor-hora');
+  if(vh) vh.value=getDesinfeccionConfig().valorHora||'';
+  document.getElementById('duraciones-grid').innerHTML=getSERVICIOS().map(sv=>`
+    <div class="form-group">
+      <label class="field-label">${sv.nombre}</label>
+      <input type="number" inputmode="numeric" min="0" step="5" value="${d[sv.id]||''}" placeholder="min" onchange="setDuracion('${sv.id}',this.value)">
+    </div>`).join('');
+}
+function costoDesinfPorClienta(){
+  const cfg=getDesinfeccionConfig();
+  const cd=cfg.clientasDia||4;
+  const tiempo=cfg.valorHora>0?((cfg.tiempo||50)/cd/60)*cfg.valorHora:0;
+  const prods=getProductosDesinfeccion().reduce((a,p0)=>{
+    const p=resolveProd(p0);
+    return a+((p.precio&&p.cantidad&&p0.usoXdia)?p.precio/p.cantidad*p0.usoXdia:0);
+  },0)/cd;
+  return tiempo+prods;
+}
+
 // ---- ANÁLISIS ----
 function calcCostoServicio(svId){
   const asig=getAsignaciones();
@@ -511,18 +557,24 @@ function calcCostoServicio(svId){
 
 function renderAnalisis(){
   renderPreciosGrid();
+  renderDuraciones();
   const config=getConfig();
   const gastosFijos=getGastosFijos();
   const totalGastosMensual=gastosFijos.reduce((s,g)=>s+g.monto,0);
   const gastoPorClienta=config.clientasMes>0?totalGastosMensual/config.clientasMes:0;
   const el=document.getElementById('analisis-content');
 
+  const valorHora=getDesinfeccionConfig().valorHora||0;
+  const duraciones=getDuraciones();
+  const desinf=costoDesinfPorClienta();
   const rows=getSERVICIOS().map(sv=>{
     const costoInsumos=calcCostoServicio(sv.id);
-    const costoTotal=costoInsumos+gastoPorClienta;
+    const min=duraciones[sv.id]||0;
+    const costoTiempo=(min/60)*valorHora;
+    const costoTotal=costoInsumos+gastoPorClienta+costoTiempo+desinf;
     const margen=sv.precio-costoTotal;
     const pct=sv.precio>0?Math.round(margen/sv.precio*100):0;
-    return{...sv,costoInsumos,costoTotal,margen,pct};
+    return{...sv,costoInsumos,costoTiempo,min,costoTotal,margen,pct};
   });
 
   const maxCosto=Math.max(...rows.map(r=>r.costoTotal),1);
@@ -534,22 +586,25 @@ function renderAnalisis(){
       <div class="metric"><div class="metric-label">Margen promedio</div><div class="metric-value ${avgMargen>=40?'green':avgMargen>=25?'':'red'}">${avgMargen}%</div></div>
     </div>
 
-    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;overflow:hidden;margin-bottom:10px">
+    <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;overflow-x:auto;margin-bottom:10px"><div style="min-width:640px">
       <div style="padding:12px 16px;border-bottom:0.5px solid #f0f0ee">
-        <div style="display:grid;grid-template-columns:1fr 80px 80px 80px 80px 60px;gap:8px;font-size:11px;color:#999;font-weight:500">
-          <span>SERVICIO</span><span style="text-align:right">PRECIO</span><span style="text-align:right">INSUMOS</span><span style="text-align:right">FIJOS</span><span style="text-align:right">COSTO TOTAL</span><span style="text-align:right">MARGEN</span>
+        <div style="display:grid;grid-template-columns:1fr 70px 70px 70px 70px 70px 80px 60px;gap:8px;font-size:11px;color:#999;font-weight:500">
+          <span>SERVICIO</span><span style="text-align:right">PRECIO</span><span style="text-align:right">INSUMOS</span><span style="text-align:right">FIJOS</span><span style="text-align:right">TU TIEMPO</span><span style="text-align:right">DESINF.</span><span style="text-align:right">COSTO TOTAL</span><span style="text-align:right">MARGEN</span>
         </div>
       </div>
       ${rows.map(r=>`
-        <div style="padding:10px 16px;border-bottom:0.5px solid #f5f5f3;display:grid;grid-template-columns:1fr 80px 80px 80px 80px 60px;gap:8px;align-items:center;font-size:13px">
+        <div style="padding:10px 16px;border-bottom:0.5px solid #f5f5f3;display:grid;grid-template-columns:1fr 70px 70px 70px 70px 70px 80px 60px;gap:8px;align-items:center;font-size:13px">
           <span style="font-weight:500">${r.nombre}</span>
           <span style="text-align:right">${fmt(r.precio)}</span>
           <span style="text-align:right;color:#555">${r.costoInsumos>0?fmt(r.costoInsumos):'—'}</span>
           <span style="text-align:right;color:#555">${gastoPorClienta>0?fmt(gastoPorClienta):'—'}</span>
+          <span style="text-align:right;color:#555">${r.costoTiempo>0?fmt(r.costoTiempo):'—'}</span>
+          <span style="text-align:right;color:#555">${desinf>0?fmt(desinf):'—'}</span>
           <span style="text-align:right;color:#c0392b">${r.costoTotal>0?fmt(r.costoTotal):'—'}</span>
           <span style="text-align:right"><span class="pill ${r.pct>=50?'green':r.pct>=30?'warn':'red'}">${r.costoTotal>0?r.pct+'%':'—'}</span></span>
         </div>`).join('')}
-    </div>
+    </div></div>
+    ${valorHora>0&&!Object.keys(duraciones).length?'<div style="font-size:12px;color:#c0392b;margin-bottom:10px">Completa la duración de cada servicio para incluir tu tiempo en el costo.</div>':''}
 
     <div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:14px 16px">
       <div style="font-size:13px;font-weight:500;margin-bottom:12px">Margen por servicio</div>
