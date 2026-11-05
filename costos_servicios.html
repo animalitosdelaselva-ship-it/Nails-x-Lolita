@@ -174,7 +174,7 @@
   <div class="config-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-size:13px;font-weight:500">Precios de venta <span style="font-size:11px;color:#aaa;font-weight:400">(editables — no afecta el registro diario)</span></div>
-      <button class="btn sm" onclick="resetPrecios()">Restaurar originales</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" onclick="aplicarPreciosMercado()">Aplicar precios de mercado</button><button class="btn sm" onclick="resetPrecios()">Restaurar originales</button></div>
     </div>
     <div id="precios-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px"></div>
   </div>
@@ -211,11 +211,26 @@ const SERVICIOS_BASE = [
   {id:'gelx_m', nombre:'Gel X largo M', precio:15500},
   {id:'gelx_l', nombre:'Gel X largo L', precio:16500},
   {id:'gelx_xl', nombre:'Gel X largo XL', precio:17500},
+  {id:'relleno', nombre:'Relleno de gel / Gel X', precio:11000},
+  {id:'retiro', nombre:'Retiro de gel', precio:4000},
 ];
 
 function getPreciosEditados(){return getObj('nxl_precios_simulados',{});}
 function setPreciosEditados(v){setObj('nxl_precios_simulados',v);}
-const SEMI_IDS=['manicura_semi','manicura_struct','pedicura_semi','gelx_s','gelx_m','gelx_l','gelx_xl'];
+const SEMI_IDS=['manicura_semi','manicura_struct','pedicura_semi','gelx_s','gelx_m','gelx_l','gelx_xl','relleno'];
+// Precios propuestos según estudios de nivel alto en Budapest (Fresha, nov 2026)
+const PRECIOS_MERCADO={manicura_semi:11000,manicura_struct:13000,pedicura:12000,pedicura_trad:13000,pedicura_semi:15000,gelx_s:16000,gelx_m:17000,gelx_l:18500,gelx_xl:19500,relleno:11500,retiro:4500};
+function aplicarPreciosMercado(){
+  if(!confirm('Esto reemplaza los precios simulados de manicura semi, estructurada, pedicuras, Gel X, relleno y retiro por los de mercado. ¿Continuar?')) return;
+  const ed=getPreciosEditados();
+  Object.entries(PRECIOS_MERCADO).forEach(([id,pr])=>{
+    const base=SERVICIOS_BASE.find(x=>x.id===id);
+    if(base&&base.precio===pr) delete ed[id]; else ed[id]=pr;
+  });
+  setPreciosEditados(ed);
+  renderAnalisis();
+  showToast('Precios de mercado aplicados ✓');
+}
 const TIERS_BASE=[1000,2000,4000,6000,8000].map((p,i)=>({id:'tier'+(i+1),nombre:'Diseño Tier '+(i+1),precio:p,min:0}));
 function getTiers(){
   const st=getObj('nxl_tiers',{});
