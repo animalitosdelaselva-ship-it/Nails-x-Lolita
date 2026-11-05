@@ -122,6 +122,7 @@
       </div>
     </div>
   </div>
+  <div id="aseo-card"></div>
   <div class="section-sep">Gastos fijos mensuales</div>
   <div id="gastos-list"></div>
   <button class="btn add" style="margin-top:8px" onclick="addGastoFijo()">+ Agregar gasto fijo</button>
@@ -256,10 +257,48 @@ function getInsumos(){return getStore('nxl_insumos');}
 function getAsignaciones(){return getObj('nxl_asignaciones',{});}
 function getGastosFijos(){return getStore('nxl_gastos_fijos');}
 function getConfig(){return getObj('nxl_costos_config',{clientasMes:60});}
+// ---- Útiles de aseo como gasto mensual ----
+function aseoMensual(){
+  const dm=getConfig().diasMes||26;
+  const items=[],faltan=[];
+  getInsumos().filter(i=>i.categoria==='Útiles de aseo').forEach(i=>{
+    const dias=parseFloat(i.metodo&&i.metodo['m-dias'])||0;
+    if(!i.precio||!dias){faltan.push(i.nombre);return;}
+    items.push({nombre:i.nombre,mensual:i.precio/dias*dm,precio:i.precio,dias});
+  });
+  return {total:items.reduce((s,x)=>s+x.mensual,0),items,faltan,dm};
+}
+function totalGastosFijos(){
+  const base=getGastosFijos().reduce((s,g)=>s+(g.monto||0),0);
+  return base+(getConfig().aseoIncluido?aseoMensual().total:0);
+}
+function setAseoCfg(field,val){
+  const c=getConfig();
+  if(field==='aseoIncluido') c.aseoIncluido=!!val; else c.diasMes=parseFloat(val)||26;
+  setObj('nxl_costos_config',c);
+  renderGastos();renderAnalisis();
+}
+function renderAseoCard(){
+  const a=aseoMensual(),c=getConfig();
+  document.getElementById('aseo-card').innerHTML=`
+    <div class="config-box">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px">🧽 Útiles de aseo (desde Insumos)</div>
+      <div style="font-size:12px;color:#666;margin-bottom:10px">Por cada insumo: precio ÷ días que dura × días de trabajo al mes.</div>
+      <div class="form-group" style="max-width:220px;margin-bottom:10px">
+        <label class="field-label">Días de trabajo al mes</label>
+        <input type="number" inputmode="numeric" value="${a.dm}" onchange="setAseoCfg('dias',this.value)">
+      </div>
+      ${a.items.map(x=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:0.5px solid #f0f0ee"><span style="color:#555">${x.nombre} <span style="color:#aaa;font-size:11px">(${fmt(x.precio)} cada ${x.dias} días)</span></span><span>${fmt(x.mensual)}/mes</span></div>`).join('')||'<div style="color:#aaa;font-size:13px">Ningún útil de aseo tiene precio y días de uso cargados.</div>'}
+      ${a.faltan.length?`<div style="font-size:12px;color:#c0392b;margin-top:8px">Sin precio o días de uso (no suman): ${a.faltan.join(', ')}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:14px;font-weight:500"><span>Total mensual</span><span>${fmt(a.total)}</span></div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" ${c.aseoIncluido?'checked':''} onchange="setAseoCfg('aseoIncluido',this.checked)"> Incluir en gastos fijos</label>
+      <div style="font-size:11px;color:#999;margin-top:4px">Si lo incluyes, no asignes útiles de aseo a los servicios: se contarían dos veces.</div>
+    </div>`;
+}
 
 function saveConfig(){
   const cm=parseFloat(document.getElementById('clientas-mes').value)||60;
-  setObj('nxl_costos_config',{clientasMes:cm});
+  setObj('nxl_costos_config',{...getConfig(),clientasMes:cm});
 }
 
 // Cost per unit of an insumo
@@ -449,12 +488,13 @@ function quitarInsumo(svId,idx){
 
 // ---- GASTOS FIJOS ----
 function renderGastos(){
+  renderAseoCard();
   const data=getGastosFijos();
   const config=getConfig();
   document.getElementById('clientas-mes').value=config.clientasMes||60;
   const el=document.getElementById('gastos-list');
   if(!data.length){el.innerHTML=`<div class="empty">No hay gastos fijos cargados aún.</div>`;return;}
-  const totalMensual=data.reduce((s,g)=>s+g.monto,0);
+  const totalMensual=totalGastosFijos();
   const costoPorClienta=config.clientasMes>0?totalMensual/config.clientasMes:0;
   el.innerHTML=data.map((g,idx)=>`
     <div class="gasto-row">
@@ -477,7 +517,7 @@ function renderGastos(){
       </div>
     </div>`).join('')+
     `<div style="background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-top:4px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:13px;color:#666">Total mensual → costo por clienta (÷${config.clientasMes})</span>
+      <span style="font-size:13px;color:#666">Total mensual${config.aseoIncluido?' (con aseo)':''} → costo por clienta (÷${config.clientasMes})</span>
       <span style="font-size:14px;font-weight:500">${fmt(totalMensual)} → <span style="color:#c0392b">${fmt(costoPorClienta)}</span></span>
     </div>`;
 }
@@ -590,7 +630,7 @@ function renderAnalisis(){
   renderDuraciones();
   const config=getConfig();
   const gastosFijos=getGastosFijos();
-  const totalGastosMensual=gastosFijos.reduce((s,g)=>s+g.monto,0);
+  const totalGastosMensual=totalGastosFijos();
   const gastoPorClienta=config.clientasMes>0?totalGastosMensual/config.clientasMes:0;
   const el=document.getElementById('analisis-content');
 
