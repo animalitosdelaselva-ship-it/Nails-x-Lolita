@@ -460,6 +460,7 @@ function renderServiciosList(){
           <button class="btn" onclick="togglePicker('${sv.id}')">Elegir varios…</button>
         </div>
         <div id="pick-${sv.id}"></div>
+        ${svAsig.length&&!sv.id.startsWith('tier')?`<div style="margin-top:8px"><button class="btn" onclick="toggleCopia('${sv.id}')">Copiar estos insumos a otros servicios…</button><div id="copy-${sv.id}"></div></div>`:''}
         ${costoTotal>0?`<div style="margin-top:12px;padding-top:10px;border-top:0.5px solid #f0f0ee;display:flex;justify-content:space-between;font-size:13px"><span style="color:#666">Costo total de insumos</span><span style="font-weight:500">${fmt(costoTotal)}</span></div>`:''}
       </div>
     </div>`;
@@ -517,6 +518,31 @@ function agregarInsumoASV(svId){
     if(body){body.classList.add('open');arr.textContent='⌄';}
   },50);
   showToast('Insumo agregado ✓');
+}
+
+// ---- Copiar insumos a otros servicios ----
+function toggleCopia(svId){
+  const box=document.getElementById('copy-'+svId);
+  if(box.innerHTML.trim()){box.innerHTML='';return;}
+  const gx=svId.startsWith('gelx_');
+  box.innerHTML=`<div style="border:0.5px solid #ddd;border-radius:8px;background:#fff;padding:10px;margin-top:8px">
+    <div style="font-size:12px;color:#666;margin-bottom:6px">Se copian los insumos con sus cantidades. Los que el servicio destino ya tenga se conservan sin cambios.</div>
+    ${getSERVICIOS().filter(x=>x.id!==svId).map(x=>`<label style="display:block;font-size:13px;padding:3px 0"><input type="checkbox" value="${x.id}" ${gx&&x.id.startsWith('gelx_')?'checked':''}> ${x.nombre}</label>`).join('')}
+    <div style="margin-top:8px"><button class="btn add" onclick="copiarInsumos('${svId}')">Copiar</button></div></div>`;
+}
+function copiarInsumos(svId){
+  const dest=[...document.querySelectorAll('#copy-'+svId+' input:checked')].map(c=>c.value);
+  if(!dest.length) return;
+  const asig=getAsignaciones();
+  const src=asig[svId]||[];
+  dest.forEach(d=>{
+    asig[d]=asig[d]||[];
+    src.forEach(a=>{if(!asig[d].find(x=>x.insumoId===a.insumoId)) asig[d].push({insumoId:a.insumoId,cantidad:a.cantidad});});
+  });
+  setObj('nxl_asignaciones',asig);
+  renderServiciosList();
+  setTimeout(()=>{const b=document.getElementById('body-'+svId),a=document.getElementById('arr-'+svId);if(b){b.classList.add('open');a.textContent='⌄';}},50);
+  showToast('Insumos copiados a '+dest.length+' servicio(s) ✓');
 }
 
 // ---- Selector múltiple de insumos ----
