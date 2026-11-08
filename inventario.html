@@ -7,9 +7,10 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
-  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px; position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+  .nav { background: #fff; border-bottom: 0.5px solid #ddd; padding: 14px 20px;  display: flex; align-items: center; justify-content: space-between; }
   .nav-title { font-size: 16px; font-weight: 500; }
   .nav-sub { font-size: 12px; color: #888; margin-top: 1px; }
+  .topbar { position: sticky; top: 0; z-index: 20; background: #f5f5f3; border-bottom: 0.5px solid #ddd; padding-bottom: 10px; }
   .tabs { display: flex; gap: 6px; padding: 14px 20px 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .tab { padding: 7px 14px; border-radius: 8px; border: 0.5px solid #ccc; background: transparent; font-size: 13px; font-family: inherit; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
   .tab.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
@@ -103,6 +104,7 @@
 </head>
 <body>
 
+<div class="topbar">
 <div class="nav">
   <div>
     <div class="nav-title">Inventario</div>
@@ -115,6 +117,7 @@
   <button class="tab active" onclick="switchTab('stock')">Stock actual</button>
   <button class="tab" onclick="switchTab('entradas')">Historial de compras</button>
   <button class="tab" onclick="switchTab('gastos')">Gastos por mes</button>
+</div>
 </div>
 
 <!-- STOCK ACTUAL -->
