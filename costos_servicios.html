@@ -1143,7 +1143,9 @@ function evalEscenario(esc,p){
   const pasos=(esc.pasos||[]).slice().sort((a,b)=>a.mes-b.mes);
   const R=Math.max(1,p.redondeo||1);
   const etapas=[info.map(x=>x.s.precio)];
-  pasos.forEach(pa=>{const prev=etapas[etapas.length-1];etapas.push(prev.map(v=>Math.round((pa.ft>0?v+pa.ft:v*(1+(pa.pct||0)/100))/R)*R));});
+  pasos.forEach(pa=>{const prev=etapas[etapas.length-1];etapas.push(prev.map((v,ix)=>{const id=info[ix].s.id;
+    if(pa.ft>0||pa.ftGx>0){if(id.startsWith('retiro_'))return v;const f=(/^(gelx_|relleno_)/.test(id)&&pa.ftGx>0)?pa.ftGx:(pa.ft||0);return Math.round((v+f)/R)*R;}
+    return Math.round(v*(1+(pa.pct||0)/100)/R)*R;}));});
   const vh=vhSchedule(p),cl0=getConfig().clientasMes||60,fijos=totalGastosFijos();
   const meses=[],tot={rev:0,gan:0,neto:0};
   for(let i=0;i<12;i++){
@@ -1164,6 +1166,7 @@ function setPlanVh(f,v){planSet(p=>{p.vh[f]=parseFloat(v)||0;});}
 function setPlanTop(f,v){planSet(p=>{p[f]=parseFloat(v)||0;});}
 function setPeso(id,v){const p=getPlan();const n=parseFloat(v);if(isNaN(n)||v==='')delete p.mix[id];else p.mix[id]=Math.max(0,n);setObj('nxl_plan_precios',p);renderPlan(true);}
 function addEsc(){planSet(p=>{p.escenarios.push({id:'e'+Date.now(),nombre:'Escenario '+(p.escenarios.length+1),pasos:[{mes:1,pct:10,perdida:0}]});});}
+function addEscSugerido(){planSet(p=>{p.escenarios.push({id:'e'+Date.now(),nombre:'Una subida: +2.000 (Gel X +1.000)',pasos:[{mes:1,pct:0,ft:2000,ftGx:1000,perdida:10}]});});}
 function delEsc(id){if(!confirm('¿Eliminar este escenario?'))return;planSet(p=>{p.escenarios=p.escenarios.filter(e=>e.id!==id);});}
 function renEsc(id,v){planSet(p=>{const e=p.escenarios.find(x=>x.id===id);if(e)e.nombre=v||'Escenario';});}
 function addPaso(id){planSet(p=>{const e=p.escenarios.find(x=>x.id===id);if(e)e.pasos.push({mes:Math.min(11,(e.pasos.length?Math.max(...e.pasos.map(x=>x.mes)):0)+3),pct:5,perdida:0});});}
@@ -1210,13 +1213,14 @@ function renderPlan(skipMix){
   const escCards=evs.map(({e,r},ei)=>`
     <div class="config-box" style="border-left:3px solid ${PLAN_COL[(ei+1)%PLAN_COL.length]}">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="text" value="${(e.nombre||'').replace(/"/g,'&quot;')}" style="flex:1;font-weight:500" onchange="renEsc('${e.id}',this.value)"><button class="btn danger" onclick="delEsc('${e.id}')">✕</button></div>
-      ${e.pasos.map((pa,i)=>`<div style="display:grid;grid-template-columns:1fr 80px 100px 110px auto;gap:8px;align-items:end;margin-bottom:6px">
+      ${e.pasos.map((pa,i)=>`<div style="display:grid;grid-template-columns:1fr 70px 90px 100px 100px auto;gap:8px;align-items:end;margin-bottom:6px">
         <div class="form-group"><label class="field-label">Subida ${i+1}: desde</label><select onchange="setPaso('${e.id}',${i},'mes',this.value)">${L.map((l,j)=>`<option value="${j}" ${pa.mes==j?'selected':''}>${l}</option>`).join('')}</select></div>
         <div class="form-group"><label class="field-label">Sube %</label><input type="number" inputmode="decimal" value="${pa.pct}" ${pa.ft>0?'style="opacity:.4"':''} onchange="setPaso('${e.id}',${i},'pct',this.value)"></div>
         <div class="form-group"><label class="field-label">o sube en Ft</label><input type="number" inputmode="numeric" value="${pa.ft||''}" placeholder="Ej: 1000" onchange="setPaso('${e.id}',${i},'ft',this.value)"></div>
+        <div class="form-group"><label class="field-label">Gel X y rellenos (Ft)</label><input type="number" inputmode="numeric" value="${pa.ftGx||''}" placeholder="igual" onchange="setPaso('${e.id}',${i},'ftGx',this.value)"></div>
         <div class="form-group"><label class="field-label">Clientas que se van %</label><input type="number" inputmode="decimal" value="${pa.perdida||0}" onchange="setPaso('${e.id}',${i},'perdida',this.value)"></div>
         <button class="btn danger" onclick="delPaso('${e.id}',${i})">✕</button></div>`).join('')||'<div style="color:#aaa;font-size:13px;margin-bottom:6px">Sin subidas: equivale a "Hoy".</div>'}
-      ${e.pasos.length?'<div style="font-size:11px;color:#999;margin-bottom:8px">Si escribes un monto en Ft, esa subida suma ese monto a todos los servicios (en lugar del %).</div>':''}
+      ${e.pasos.length?'<div style="font-size:11px;color:#999;margin-bottom:8px">Si escribes un monto en Ft, esa subida suma ese monto (en lugar del %). "Gel X y rellenos" permite otro monto para esos servicios. Los retiros no suben con montos en Ft.</div>':''}
       <button class="btn" onclick="addPaso('${e.id}')">+ Agregar subida</button>
     </div>`).join('');
   const best=Math.max(...all.map(a=>a.r.netoProm));
@@ -1250,7 +1254,7 @@ function renderPlan(skipMix){
   document.getElementById('plan-main').innerHTML=
     vhCard+
     `<div class="section-sep">Escenarios de subida</div>`+escCards+
-    `<button class="btn add" onclick="addEsc()" style="margin-bottom:14px">+ Nuevo escenario</button>`+
+    `<button class="btn add" onclick="addEsc()" style="margin-bottom:14px">+ Nuevo escenario</button> <button class="btn add" onclick="addEscSugerido()" style="margin-bottom:14px">+ Escenario +2.000 (Gel X +1.000)</button>`+
     `<div class="section-sep">Resultados</div>`+
     (durFalta.length?`<div style="font-size:12px;color:#c0392b;margin-bottom:8px">Faltan duraciones en: ${durFalta.join(', ')}. Su costo de tiempo cuenta como 0 y el resultado sale mejor de lo real.</div>`:'')+
     cmp+detail;
