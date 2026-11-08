@@ -1140,7 +1140,7 @@ function evalEscenario(esc,p){
   const pasos=(esc.pasos||[]).slice().sort((a,b)=>a.mes-b.mes);
   const R=Math.max(1,p.redondeo||1);
   const etapas=[info.map(x=>x.s.precio)];
-  pasos.forEach(pa=>{const prev=etapas[etapas.length-1];etapas.push(prev.map(v=>Math.round(v*(1+(pa.pct||0)/100)/R)*R));});
+  pasos.forEach(pa=>{const prev=etapas[etapas.length-1];etapas.push(prev.map(v=>Math.round((pa.ft>0?v+pa.ft:v*(1+(pa.pct||0)/100))/R)*R));});
   const vh=vhSchedule(p),cl0=getConfig().clientasMes||60,fijos=totalGastosFijos();
   const meses=[],tot={rev:0,gan:0,neto:0};
   for(let i=0;i<12;i++){
@@ -1207,11 +1207,13 @@ function renderPlan(skipMix){
   const escCards=evs.map(({e,r},ei)=>`
     <div class="config-box" style="border-left:3px solid ${PLAN_COL[(ei+1)%PLAN_COL.length]}">
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="text" value="${(e.nombre||'').replace(/"/g,'&quot;')}" style="flex:1;font-weight:500" onchange="renEsc('${e.id}',this.value)"><button class="btn danger" onclick="delEsc('${e.id}')">✕</button></div>
-      ${e.pasos.map((pa,i)=>`<div style="display:grid;grid-template-columns:1fr 90px 110px auto;gap:8px;align-items:end;margin-bottom:6px">
+      ${e.pasos.map((pa,i)=>`<div style="display:grid;grid-template-columns:1fr 80px 100px 110px auto;gap:8px;align-items:end;margin-bottom:6px">
         <div class="form-group"><label class="field-label">Subida ${i+1}: desde</label><select onchange="setPaso('${e.id}',${i},'mes',this.value)">${L.map((l,j)=>`<option value="${j}" ${pa.mes==j?'selected':''}>${l}</option>`).join('')}</select></div>
-        <div class="form-group"><label class="field-label">Sube %</label><input type="number" inputmode="decimal" value="${pa.pct}" onchange="setPaso('${e.id}',${i},'pct',this.value)"></div>
+        <div class="form-group"><label class="field-label">Sube %</label><input type="number" inputmode="decimal" value="${pa.pct}" ${pa.ft>0?'style="opacity:.4"':''} onchange="setPaso('${e.id}',${i},'pct',this.value)"></div>
+        <div class="form-group"><label class="field-label">o sube en Ft</label><input type="number" inputmode="numeric" value="${pa.ft||''}" placeholder="Ej: 1000" onchange="setPaso('${e.id}',${i},'ft',this.value)"></div>
         <div class="form-group"><label class="field-label">Clientas que se van %</label><input type="number" inputmode="decimal" value="${pa.perdida||0}" onchange="setPaso('${e.id}',${i},'perdida',this.value)"></div>
         <button class="btn danger" onclick="delPaso('${e.id}',${i})">✕</button></div>`).join('')||'<div style="color:#aaa;font-size:13px;margin-bottom:6px">Sin subidas: equivale a "Hoy".</div>'}
+      ${e.pasos.length?'<div style="font-size:11px;color:#999;margin-bottom:8px">Si escribes un monto en Ft, esa subida suma ese monto a todos los servicios (en lugar del %).</div>':''}
       <button class="btn" onclick="addPaso('${e.id}')">+ Agregar subida</button>
     </div>`).join('');
   const best=Math.max(...all.map(a=>a.r.netoProm));
