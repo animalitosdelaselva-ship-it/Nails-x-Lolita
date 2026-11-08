@@ -201,7 +201,9 @@
 <!-- PLAN DE PRECIOS -->
 <div id="panel-plan" class="panel">
   <p style="font-size:13px;color:#888;margin-bottom:16px">Planifica cuánto subir tus precios durante el año. Compara quedarte como estás, una sola subida o varias, junto con la subida gradual de tu valor hora.</p>
-  <div id="plan-content"></div>
+  <div id="plan-main"></div>
+  <div id="plan-mix"></div>
+  <div id="plan-notes"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1157,7 +1159,7 @@ function evalEscenario(esc,p){
 function planSet(fn){const p=getPlan();fn(p);savePlan(p);}
 function setPlanVh(f,v){planSet(p=>{p.vh[f]=parseFloat(v)||0;});}
 function setPlanTop(f,v){planSet(p=>{p[f]=parseFloat(v)||0;});}
-function setPeso(id,v){planSet(p=>{const n=parseFloat(v);if(isNaN(n)||v==='')delete p.mix[id];else p.mix[id]=Math.max(0,n);});}
+function setPeso(id,v){const p=getPlan();const n=parseFloat(v);if(isNaN(n)||v==='')delete p.mix[id];else p.mix[id]=Math.max(0,n);setObj('nxl_plan_precios',p);renderPlan(true);}
 function addEsc(){planSet(p=>{p.escenarios.push({id:'e'+Date.now(),nombre:'Escenario '+(p.escenarios.length+1),pasos:[{mes:1,pct:10,perdida:0}]});});}
 function delEsc(id){if(!confirm('¿Eliminar este escenario?'))return;planSet(p=>{p.escenarios=p.escenarios.filter(e=>e.id!==id);});}
 function renEsc(id,v){planSet(p=>{const e=p.escenarios.find(x=>x.id===id);if(e)e.nombre=v||'Escenario';});}
@@ -1180,7 +1182,8 @@ function planChart(series,meta,L){
     <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:#555;margin-top:4px">${series.map(s=>`<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${s.c};margin-right:4px"></span>${s.n}</span>`).join('')}</div>`;
 }
 
-function renderPlan(){
+function renderPlan(skipMix){
+  const openKeys=[...document.querySelectorAll('#panel-plan details[open]')].map(d=>d.dataset.k);
   const p=getPlan(),L=mesesLabels(),vh=vhSchedule(p);
   const hoy=evalEscenario({pasos:[]},p);
   const evs=p.escenarios.map(e=>({e,r:evalEscenario(e,p)}));
@@ -1227,7 +1230,7 @@ function renderPlan(){
     const r=a.r,n=r.etapas.length;
     const hd=['Hoy'].concat(r.pasos.map(pa=>'Desde '+L[pa.mes]));
     const g=`minmax(150px,1fr) ${'80px '.repeat(n)}70px 70px 70px`;
-    return `<details style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:8px"><summary style="cursor:pointer;font-size:13px;font-weight:500"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${a.c};margin-right:6px"></span>Precios por servicio: ${a.n}</summary>
+    return `<details data-k="d${all.indexOf(a)}" style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:8px"><summary style="cursor:pointer;font-size:13px;font-weight:500"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${a.c};margin-right:6px"></span>Precios por servicio: ${a.n}</summary>
       <div style="overflow-x:auto;margin-top:8px"><div style="min-width:${300+80*n+210}px">
         <div style="display:grid;grid-template-columns:${g};gap:8px;font-size:11px;color:#999;font-weight:500;padding:4px 0"><span>SERVICIO</span>${hd.map(h=>`<span style="text-align:right">${h.toUpperCase()}</span>`).join('')}<span style="text-align:right">SUBE</span><span style="text-align:right">MARGEN HOY</span><span style="text-align:right">MARGEN FIN</span></div>
         ${r.info.map((x,ix)=>{
@@ -1236,18 +1239,22 @@ function renderPlan(){
           const pill=v=>`<span class="pill ${v>=50?'green':v>=30?'warn':'red'}">${v}%</span>`;
           return `<div style="display:grid;grid-template-columns:${g};gap:8px;align-items:center;font-size:13px;padding:5px 0;border-top:0.5px solid #f5f5f3"><span>${x.s.nombre}</span>${r.etapas.map(e=>`<span style="text-align:right">${fmt(e[ix])}</span>`).join('')}<span style="text-align:right;color:#777">${pF>p0?'+'+Math.round((pF/p0-1)*100)+'%':'—'}</span><span style="text-align:right">${pill(mH)}</span><span style="text-align:right">${pill(mF)}</span></div>`;}).join('')}
       </div></div></details>`;}).join('');
-  const mix=`<details style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:10px"><summary style="cursor:pointer;font-size:13px;font-weight:500">Mezcla de servicios (qué tan seguido se hace cada uno)</summary>
+  const mix=`<details data-k="mix" style="background:#fff;border:0.5px solid #e0e0e0;border-radius:10px;padding:10px 14px;margin-bottom:10px"><summary style="cursor:pointer;font-size:13px;font-weight:500">Mezcla de servicios (qué tan seguido se hace cada uno)</summary>
     <div style="font-size:12px;color:#666;margin:6px 0 8px">Peso relativo de cada servicio entre tus clientas. Por defecto todos valen 1 y los rellenos y retiros 0. Ejemplo: si haces el doble de Gel X M que de los demás, ponle 2. Esto cambia mucho el resultado.</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px">${getSERVICIOS().map(s=>`<div class="form-group"><label class="field-label">${s.nombre}</label><input type="number" inputmode="decimal" min="0" step="0.5" value="${pesoServ(p,s.id)}" onchange="setPeso('${s.id}',this.value)"></div>`).join('')}</div></details>`;
-  document.getElementById('plan-content').innerHTML=
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px">${getSERVICIOS().map(s=>`<div class="form-group"><label class="field-label">${s.nombre}</label><input type="number" inputmode="decimal" min="0" step="0.5" class="peso-in" value="${pesoServ(p,s.id)}" onkeydown="if(event.key==='Enter'){event.preventDefault();nextPeso(this);}" onchange="setPeso('${s.id}',this.value)"></div>`).join('')}</div></details>`;
+  document.getElementById('plan-main').innerHTML=
     vhCard+
     `<div class="section-sep">Escenarios de subida</div>`+escCards+
     `<button class="btn add" onclick="addEsc()" style="margin-bottom:14px">+ Nuevo escenario</button>`+
     `<div class="section-sep">Resultados</div>`+
     (durFalta.length?`<div style="font-size:12px;color:#c0392b;margin-bottom:8px">Faltan duraciones en: ${durFalta.join(', ')}. Su costo de tiempo cuenta como 0 y el resultado sale mejor de lo real.</div>`:'')+
-    cmp+detail+mix+
+    cmp+detail;
+  if(!skipMix) document.getElementById('plan-mix').innerHTML=mix;
+  document.getElementById('plan-notes').innerHTML=
     `<div style="font-size:11px;color:#999;line-height:1.5">Supuestos: la mezcla de servicios y las clientas al mes (${hoy.cl0}) se mantienen, salvo las que se van en cada subida. No incluye extras de diseño ni propinas. Costos fijos, insumos y tiempo salen de las demás pestañas. Es una proyección, no una promesa.</div>`;
+  document.querySelectorAll('#panel-plan details').forEach(d=>{if(openKeys.includes(d.dataset.k))d.open=true;});
 }
+function nextPeso(el){const all=[...document.querySelectorAll('.peso-in')];const i=all.indexOf(el);const n=all[i+1];if(n){n.focus();n.select();}else el.blur();}
 
 function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
